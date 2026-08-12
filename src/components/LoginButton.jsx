@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom";
 export default function LoginButton(){
     const navigate = useNavigate();
     const handleGoToLogin = () =>{
-        navigate("/login");
+        navigate("/admin");
     };
     return(
         <>
