@@ -3,6 +3,7 @@ import InitialPage from "./pages/InitialPage"
 import './App.css'
 import Login from './pages/Login';
 import Admin from './pages/Admin';
+import ProtectedRoute from './middleware/ProtectedRoute';
 
 export default function App() {
   const location = useLocation();
@@ -10,7 +11,7 @@ export default function App() {
     <Routes location={location} key={location.pathname}>
       <Route path="/" element={<InitialPage/>} />
       <Route path="/login" element={<Login/>}/>
-      <Route path="/admin" element={<Admin/>}/>
+      <Route path="/admin" element={<ProtectedRoute element={<Admin/>}/>}/>
     </Routes>
   )
 }
