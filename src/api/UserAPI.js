@@ -19,3 +19,18 @@ export const loginUser = async ({ username, password }) => {
   return await response.text(); 
   
 };
+
+export const isUserAuth = async () => {
+    const res = await fetch(`${API_URL}/user/validate`, {
+        method: "GET",
+        credentials: "include",
+    });
+    return res.ok;
+}
+export const getUserAuth = async() => {
+  const res = await fetch(`${API_URL}/user/get`,{
+    method: "GET",
+    credentials: "include",
+  });
+  return res.ok;
+}

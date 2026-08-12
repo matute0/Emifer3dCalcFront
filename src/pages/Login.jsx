@@ -15,7 +15,7 @@ export default function LoginPage() {
     e.preventDefault();
     setError('');
     setIsLoading(true);
-    loginUser({username, password});
+    await loginUser({username, password});
     navigate("/admin")
   };
 
@@ -28,7 +28,7 @@ export default function LoginPage() {
             Emifer 3D
           </h1>
           <p className="text-gray-400 text-sm mt-2">
-            Ingresá tus credenciales para continuar
+            Ingresa tus credenciales para continuar
           </p>
         </div>
 
