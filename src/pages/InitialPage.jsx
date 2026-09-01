@@ -157,15 +157,23 @@ export default function InitialPage() {
         body: JSON.stringify(payload)
       });
 
-      if (!response.ok) {
-        throw new Error(`Error en la solicitud: ${response.status} ${response.statusText}`);
+      let data;
+      try {
+        data = await response.json();
+      } catch {
+        data = null;
       }
 
-      const data = await response.json();
+      if (!response.ok) {
+        const errorMessage = data && data.message ? data.message : "Ocurrió un error inesperado.";
+        setError(errorMessage);
+        return;
+      }
+
       setResult(data);
     } catch (err) {
       console.error(err);
-      setError("Ocurrió un error al calcular el costo. Revisa la conexión o los datos enviados.");
+      setError("Ocurrió un error inesperado.");
     } finally {
       setIsLoading(false);
     }
@@ -177,7 +185,6 @@ export default function InitialPage() {
         <LoginButton />
       </div>
 
-      {/* Encabezado decorado de forma sobria y moderna */}
       <div className="flex flex-col items-center my-3">
         <h1 className="text-3xl md:text-4xl font-extrabold tracking-tight text-center bg-gradient-to-r from-blue-400 via-sky-200 to-indigo-300 bg-clip-text text-transparent drop-shadow-sm">
           Calculadora Emifer 3D
