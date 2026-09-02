@@ -18,14 +18,25 @@ export default function FilamentsManager() {
   const [error, setError] = useState(null);
   const [successMsg, setSuccessMsg] = useState(null);
 
+const safeJsonParse = async (response) => {
+  const text = await response.text();
+  if (!text) return null;
+
+  try {
+    return JSON.parse(text);
+  } catch (_) {
+    return { message: text };
+  }
+};
+
   const fetchFilaments = async () => {
     try {
       const response = await fetch(`${API_URL}/filament/get`, {
         credentials: "include",
       });
       if (response.ok) {
-        const data = await response.json();
-        setFilaments(data);
+        const data = await safeJsonParse(response);
+        setFilaments(data || []);
       }
     } catch (err) {
       console.error("Error al cargar filamentos:", err);
@@ -93,15 +104,7 @@ export default function FilamentsManager() {
         body: JSON.stringify(payload),
       });
 
-      let data = null;
-      try {
-        const responseText = await response.text();
-        if (responseText) {
-          data = JSON.parse(responseText);
-        }
-      } catch (parseError) {
-        console.warn("La respuesta no contiene JSON válido.");
-      }
+      const data = await safeJsonParse(response);
 
       if (!response.ok) {
         throw new Error(
@@ -137,8 +140,9 @@ export default function FilamentsManager() {
         credentials: "include",
       });
 
+      const data = await safeJsonParse(response);
+
       if (!response.ok) {
-        const data = await response.json().catch(() => null);
         throw new Error(data?.message || "Error al eliminar el filamento.");
       }
 
