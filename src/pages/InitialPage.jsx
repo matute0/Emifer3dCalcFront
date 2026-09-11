@@ -210,21 +210,24 @@ export default function InitialPage() {
       </motion.div>
 
       <div className="w-full max-w-6xl flex flex-col lg:flex-row gap-8 items-start justify-center mt-2 mb-4">
-        {/* Formulario */}
+        {/* Formulario (Recuadro Izquierdo Homologado en Estilo al Derecho) */}
         <motion.div
           initial={{ opacity: 0, x: -30 }}
           animate={{ opacity: 1, x: 0 }}
           transition={{ duration: 0.5, delay: 0.1 }}
-          className="bg-gray-800 p-8 rounded-xl shadow-lg w-full lg:w-1/2 border border-gray-700/50"
+          className="bg-gradient-to-b from-gray-800 via-gray-800 to-gray-850 p-8 rounded-xl shadow-2xl w-full lg:w-1/2 border border-gray-700 overflow-hidden relative"
         >
-          <form onSubmit={handleCalculate} className="space-y-6">
+          {/* Glow ambiental superior sutil */}
+          <div className="absolute -top-16 -right-16 w-32 h-32 bg-gray-700/20 rounded-full blur-2xl pointer-events-none" />
+
+          <form onSubmit={handleCalculate} className="space-y-6 relative z-10">
             <div className="flex flex-col">
               <label className="text-sm text-gray-400 mb-1">Impresora</label>
               <select
                 required
                 value={selectedPrinterId}
                 onChange={handlePrinterChange}
-                className="bg-gray-700 rounded-md p-2 text-white focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all"
+                className="bg-gray-700 rounded-md p-2 text-white focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all border border-transparent"
               >
                 <option value="" disabled>
                   Selecciona una impresora...
@@ -249,7 +252,7 @@ export default function InitialPage() {
                   required
                   value={hours}
                   onChange={(e) => setHours(e.target.value)}
-                  className="bg-gray-700 rounded-md p-2 text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="bg-gray-700 rounded-md p-2 text-white focus:outline-none focus:ring-2 focus:ring-blue-500 border border-transparent"
                 />
               </div>
               <div className="flex flex-col">
@@ -260,7 +263,7 @@ export default function InitialPage() {
                   required
                   value={minutes}
                   onChange={(e) => setMinutes(e.target.value)}
-                  className="bg-gray-700 rounded-md p-2 text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="bg-gray-700 rounded-md p-2 text-white focus:outline-none focus:ring-2 focus:ring-blue-500 border border-transparent"
                 />
               </div>
             </div>
@@ -291,7 +294,7 @@ export default function InitialPage() {
                         onChange={(e) =>
                           handleFilamentChange(index, "filamentID", e.target.value)
                         }
-                        className="bg-gray-700 rounded-md p-2 text-white focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
+                        className="bg-gray-700 rounded-md p-2 text-white focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm border border-transparent"
                       >
                         <option value="" disabled>
                           Seleccionar...
@@ -330,7 +333,7 @@ export default function InitialPage() {
                         onChange={(e) =>
                           handleFilamentChange(index, "amount", e.target.value)
                         }
-                        className="bg-gray-700 rounded-md p-2 text-white focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
+                        className="bg-gray-700 rounded-md p-2 text-white focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm border border-transparent"
                       />
                     </div>
 
@@ -392,7 +395,7 @@ export default function InitialPage() {
                         onChange={(e) =>
                           handleAdditionalCostChange(index, "name", e.target.value)
                         }
-                        className="bg-gray-700 rounded-md p-2 text-white focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
+                        className="bg-gray-700 rounded-md p-2 text-white focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm border border-transparent"
                       />
                     </div>
                     <div className="flex flex-col w-20">
@@ -408,7 +411,7 @@ export default function InitialPage() {
                         onChange={(e) =>
                           handleAdditionalCostChange(index, "quantity", e.target.value)
                         }
-                        className="bg-gray-700 rounded-md p-2 text-white focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
+                        className="bg-gray-700 rounded-md p-2 text-white focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm border border-transparent"
                       />
                     </div>
                     <div className="flex flex-col w-24">
@@ -428,7 +431,7 @@ export default function InitialPage() {
                             e.target.value
                           )
                         }
-                        className="bg-gray-700 rounded-md p-2 text-white focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
+                        className="bg-gray-700 rounded-md p-2 text-white focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm border border-transparent"
                       />
                     </div>
                     <motion.button
@@ -481,45 +484,80 @@ export default function InitialPage() {
           </form>
         </motion.div>
 
-        {/* Tarjeta de Resultados con animación de entrada */}
+        {/* Tarjeta de Resultados con Animación de Parpadeo / Pulsación Continua */}
         <AnimatePresence>
           {result && (
             <motion.div
-              initial={{ opacity: 0, scale: 0.9, x: 20 }}
-              animate={{ opacity: 1, scale: 1, x: 0 }}
-              exit={{ opacity: 0, scale: 0.9, x: 20 }}
-              transition={{ duration: 0.35, ease: "easeOut" }}
-              className="bg-gray-800 border border-gray-700 p-8 rounded-xl shadow-xl w-full lg:w-1/2 sticky top-4"
+              initial={{ opacity: 0, scale: 0.88, y: 30, x: 10 }}
+              animate={{
+                opacity: 1,
+                scale: 1,
+                y: 0,
+                x: 0,
+                borderColor: [
+                  "rgba(59, 130, 246, 0.3)",
+                  "rgba(59, 130, 246, 1)",
+                  "rgba(59, 130, 246, 0.3)"
+                ],
+                boxShadow: [
+                  "0 10px 25px -5px rgba(59, 130, 246, 0.1)",
+                  "0 20px 35px 2px rgba(59, 130, 246, 0.35)",
+                  "0 10px 25px -5px rgba(59, 130, 246, 0.1)"
+                ]
+              }}
+              exit={{ opacity: 0, scale: 0.9, y: 20 }}
+              transition={{
+                duration: 0.4,
+                borderColor: { duration: 1.5, repeat: Infinity, ease: "easeInOut" },
+                boxShadow: { duration: 1.5, repeat: Infinity, ease: "easeInOut" }
+              }}
+              className="bg-gradient-to-b from-gray-800 via-gray-800 to-gray-850 border-2 p-8 rounded-xl w-full lg:w-1/2 sticky top-4 overflow-hidden relative"
             >
-              <h2 className="text-3xl font-bold mb-2 text-center text-blue-400">
-                Costo Final: ${result.finalCost?.toFixed(2) || 0}
-              </h2>
-              <p className="text-green-400 text-center text-lg font-semibold mb-6">
-                Ganancia: ${result.profit?.toFixed(2) || 0}
-              </p>
+              {/* Glow sutil superior */}
+              <div className="absolute -top-16 -right-16 w-32 h-32 bg-blue-500/20 rounded-full blur-2xl pointer-events-none" />
 
-              <div className="space-y-4 text-sm">
-                <div className="bg-gray-750 p-4 rounded-lg border border-gray-700">
-                  <h3 className="text-lg font-semibold text-gray-200 mb-3 border-b border-gray-600 pb-1">
+              {/* Banner / Total */}
+              <div className="text-center mb-6 pb-4 border-b border-gray-700/80">
+                <span className="text-xs font-semibold tracking-wider uppercase text-blue-400 bg-blue-950/60 border border-blue-500/30 px-3 py-1 rounded-full inline-block mb-3">
+                  Resumen del Cálculo
+                </span>
+                <h2 className="text-3xl md:text-4xl font-black text-white tracking-tight">
+                  <span className="bg-gradient-to-r from-blue-400 via-sky-300 to-indigo-300 bg-clip-text text-transparent">
+                    ${result.finalCost?.toFixed(2) || "0.00"}
+                  </span>
+                </h2>
+                <p className="text-emerald-400 text-base font-semibold mt-1.5 flex items-center justify-center gap-1">
+                  <span>Ganancia estimada:</span>
+                  <span className="bg-emerald-950/60 border border-emerald-500/30 px-2 py-0.5 rounded-md">
+                    ${result.profit?.toFixed(2) || "0.00"}
+                  </span>
+                </p>
+              </div>
+
+              <div className="space-y-4 text-sm relative z-10">
+                <div className="bg-gray-750/90 p-4 rounded-lg border border-gray-700 shadow-inner">
+                  <h3 className="text-base font-semibold text-gray-200 mb-3 border-b border-gray-600/70 pb-1.5 flex items-center gap-2">
+                    <span className="w-2 h-2 rounded-full bg-blue-400 inline-block" />
                     Uso de Impresora
                   </h3>
                   <div className="flex justify-between text-gray-300 mb-2">
                     <span>Electricidad:</span>
-                    <span className="font-medium">
+                    <span className="font-semibold text-white">
                       ${result.printerCost?.wattsCost?.toFixed(2) || 0}
                     </span>
                   </div>
                   <div className="flex justify-between text-gray-300">
                     <span>Desgaste:</span>
-                    <span className="font-medium">
+                    <span className="font-semibold text-white">
                       ${result.printerCost?.wearCostPrint?.toFixed(2) || 0}
                     </span>
                   </div>
                 </div>
 
                 {result.filamentCosts && result.filamentCosts.length > 0 && (
-                  <div className="bg-gray-750 p-4 rounded-lg border border-gray-700">
-                    <h3 className="text-lg font-semibold text-gray-200 mb-3 border-b border-gray-600 pb-1">
+                  <div className="bg-gray-750/90 p-4 rounded-lg border border-gray-700 shadow-inner">
+                    <h3 className="text-base font-semibold text-gray-200 mb-3 border-b border-gray-600/70 pb-1.5 flex items-center gap-2">
+                      <span className="w-2 h-2 rounded-full bg-indigo-400 inline-block" />
                       Filamentos
                     </h3>
                     {result.filamentCosts.map((fc, idx) => {
@@ -537,7 +575,7 @@ export default function InitialPage() {
                           <span>
                             {filName} ({fc.amount}g):
                           </span>
-                          <span className="font-medium">
+                          <span className="font-semibold text-white">
                             ${fc.finalCost?.toFixed(2) || 0}
                           </span>
                         </div>
@@ -547,8 +585,9 @@ export default function InitialPage() {
                 )}
 
                 {result.additionalCost && result.additionalCost.length > 0 && (
-                  <div className="bg-gray-750 p-4 rounded-lg border border-gray-700">
-                    <h3 className="text-lg font-semibold text-gray-200 mb-3 border-b border-gray-600 pb-1">
+                  <div className="bg-gray-750/90 p-4 rounded-lg border border-gray-700 shadow-inner">
+                    <h3 className="text-base font-semibold text-gray-200 mb-3 border-b border-gray-600/70 pb-1.5 flex items-center gap-2">
+                      <span className="w-2 h-2 rounded-full bg-emerald-400 inline-block" />
                       Costos Adicionales
                     </h3>
                     {result.additionalCost.map((ac, idx) => (
@@ -559,7 +598,7 @@ export default function InitialPage() {
                         <span>
                           {ac.costName} (x{ac.quantity}):
                         </span>
-                        <span className="font-medium">
+                        <span className="font-semibold text-white">
                           ${ac.totalCost?.toFixed(2) || 0}
                         </span>
                       </div>
