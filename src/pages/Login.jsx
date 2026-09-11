@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
+import { motion, AnimatePresence } from 'framer-motion';
 import { loginUser } from '../api/UserAPI';
 
 export default function LoginPage() {
@@ -15,28 +16,54 @@ export default function LoginPage() {
     e.preventDefault();
     setError('');
     setIsLoading(true);
-    await loginUser({username, password});
-    navigate("/admin")
+
+    try {
+      await loginUser({ username, password });
+      navigate("/admin");
+    } catch (err) {
+      setError(err?.message || "Credenciales incorrectas o error de servidor");
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (
     <div className="min-h-screen bg-gray-900 text-gray-100 flex items-center justify-center p-4">
-      <div className="w-full max-w-md bg-gray-800/80 backdrop-blur-md rounded-2xl p-8 border border-gray-700/50 shadow-2xl">
-        
-        <div className="text-center mb-8">
+      {/* Tarjeta principal animada */}
+      <motion.div
+        initial={{ opacity: 0, y: 20, scale: 0.95 }}
+        animate={{ opacity: 1, y: 0, scale: 1 }}
+        transition={{ duration: 0.4, ease: "easeOut" }}
+        className="w-full max-w-md bg-gray-800/80 backdrop-blur-md rounded-2xl p-8 border border-gray-700/50 shadow-2xl"
+      >
+        <motion.div 
+          initial={{ opacity: 0, y: -10 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.4, delay: 0.1 }}
+          className="text-center mb-8"
+        >
           <h1 className="text-3xl font-extrabold bg-gradient-to-r from-indigo-400 to-purple-400 bg-clip-text text-transparent">
             Emifer 3D
           </h1>
           <p className="text-gray-400 text-sm mt-2">
             Ingresa tus credenciales para continuar
           </p>
-        </div>
+        </motion.div>
 
-        {error && (
-          <div className="mb-6 p-3 bg-red-500/10 border border-red-500/50 rounded-xl text-red-400 text-sm text-center animate-fade-in">
-            {error}
-          </div>
-        )}
+        {/* Notificación de error dinámica */}
+        <AnimatePresence>
+          {error && (
+            <motion.div
+              initial={{ opacity: 0, height: 0, y: -10 }}
+              animate={{ opacity: 1, height: "auto", y: 0 }}
+              exit={{ opacity: 0, height: 0, y: -10 }}
+              transition={{ duration: 0.25 }}
+              className="mb-6 p-3 bg-red-500/10 border border-red-500/50 rounded-xl text-red-400 text-sm text-center overflow-hidden"
+            >
+              {error}
+            </motion.div>
+          )}
+        </AnimatePresence>
 
         <form onSubmit={handleSubmit} className="space-y-5">
           <div>
@@ -76,29 +103,33 @@ export default function LoginPage() {
             </div>
           </div>
 
-          <button
+          <motion.button
+            whileHover={{ scale: 1.02 }}
+            whileTap={{ scale: 0.98 }}
             type="submit"
             disabled={isLoading}
-            className="w-full py-3 px-4 bg-indigo-600 hover:bg-indigo-500 disabled:bg-indigo-600/50 text-white font-semibold rounded-xl shadow-lg shadow-indigo-600/20 transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 focus:ring-offset-gray-800 flex items-center justify-center"
+            className="w-full py-3 px-4 bg-indigo-600 hover:bg-indigo-500 disabled:bg-indigo-600/50 text-white font-semibold rounded-xl shadow-lg shadow-indigo-600/20 transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 focus:ring-offset-gray-800 flex items-center justify-center"
           >
             {isLoading ? (
               <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
             ) : (
               'Ingresar'
             )}
-          </button>
+          </motion.button>
         </form>
 
         <div className="mt-8 text-center">
-          <Link
-            to="/"
-            className="text-xs text-gray-400 hover:text-indigo-400 transition-colors inline-flex items-center gap-1"
-          >
-            ← Volver al calculador
-          </Link>
+          <motion.div whileHover={{ x: -4 }} className="inline-block">
+            <Link
+              to="/"
+              className="text-xs text-gray-400 hover:text-indigo-400 transition-colors inline-flex items-center gap-1"
+            >
+              ← Volver al calculador
+            </Link>
+          </motion.div>
         </div>
 
-      </div>
+      </motion.div>
     </div>
   );
 }

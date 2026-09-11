@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { motion, AnimatePresence } from "framer-motion";
 import LoginButton from "../components/LoginButton";
 
 export default function InitialPage() {
@@ -12,7 +13,7 @@ export default function InitialPage() {
 
   const [hours, setHours] = useState(0);
   const [minutes, setMinutes] = useState(0);
-  
+
   const [selectedFilaments, setSelectedFilaments] = useState([
     { filamentID: "", amount: 0 }
   ]);
@@ -35,7 +36,7 @@ export default function InitialPage() {
           const printersData = await printersResponse.json();
           setPrinters(printersData);
         }
-        
+
         if (filamentsResponse.ok) {
           const filamentsData = await filamentsResponse.json();
           setAvailableFilaments(filamentsData);
@@ -54,7 +55,7 @@ export default function InitialPage() {
         setCurrentPrinter(null);
         return;
       }
-      
+
       try {
         const response = await fetch(`${API_URL}/printer/get/${selectedPrinterId}`);
         if (response.ok) {
@@ -110,9 +111,14 @@ export default function InitialPage() {
     setAdditionalCostsList(updated);
   };
 
-  const addAdditionalCostRow = () => setAdditionalCostsList([...additionalCostsList, { name: "", quantity: 1, unitPrice: 0 }]);
-  
-  const removeAdditionalCostRow = (index) => setAdditionalCostsList(additionalCostsList.filter((_, i) => i !== index));
+  const addAdditionalCostRow = () =>
+    setAdditionalCostsList([
+      ...additionalCostsList,
+      { name: "", quantity: 1, unitPrice: 0 }
+    ]);
+
+  const removeAdditionalCostRow = (index) =>
+    setAdditionalCostsList(additionalCostsList.filter((_, i) => i !== index));
 
   const handleCalculate = async (e) => {
     e.preventDefault();
@@ -120,10 +126,9 @@ export default function InitialPage() {
     setError(null);
     setResult(null);
 
-    // Validación de filamentos duplicados
     const filamentIds = selectedFilaments
-      .map(f => String(f.filamentID))
-      .filter(id => id !== "");
+      .map((f) => String(f.filamentID))
+      .filter((id) => id !== "");
 
     const hasDuplicates = new Set(filamentIds).size !== filamentIds.length;
 
@@ -135,11 +140,11 @@ export default function InitialPage() {
 
     const payload = {
       printerID: String(selectedPrinterId),
-      filamentAMList: selectedFilaments.map(f => ({
-        filamentID: String(f.filamentID), 
+      filamentAMList: selectedFilaments.map((f) => ({
+        filamentID: String(f.filamentID),
         amount: Number(f.amount)
       })),
-      additionalCosts: additionalCostsList.map(c => ({
+      additionalCosts: additionalCostsList.map((c) => ({
         costName: String(c.name),
         unitPrice: Number(c.unitPrice),
         quantity: Number(c.quantity)
@@ -165,7 +170,8 @@ export default function InitialPage() {
       }
 
       if (!response.ok) {
-        const errorMessage = data && data.message ? data.message : "Ocurrió un error inesperado.";
+        const errorMessage =
+          data && data.message ? data.message : "Ocurrió un error inesperado.";
         setError(errorMessage);
         return;
       }
@@ -185,29 +191,49 @@ export default function InitialPage() {
         <LoginButton />
       </div>
 
-      <div className="flex flex-col items-center my-3">
+      {/* Header animado */}
+      <motion.div
+        initial={{ opacity: 0, y: -20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.5 }}
+        className="flex flex-col items-center my-3"
+      >
         <h1 className="text-3xl md:text-4xl font-extrabold tracking-tight text-center bg-gradient-to-r from-blue-400 via-sky-200 to-indigo-300 bg-clip-text text-transparent drop-shadow-sm">
           Calculadora Emifer 3D
         </h1>
-        <div className="h-1 w-20 bg-gradient-to-r from-blue-500 to-indigo-500 rounded-full mt-2.5 opacity-80 shadow-sm" />
-      </div>
+        <motion.div
+          initial={{ width: 0 }}
+          animate={{ width: "5rem" }}
+          transition={{ duration: 0.6, delay: 0.2 }}
+          className="h-1 bg-gradient-to-r from-blue-500 to-indigo-500 rounded-full mt-2.5 opacity-80 shadow-sm"
+        />
+      </motion.div>
 
       <div className="w-full max-w-6xl flex flex-col lg:flex-row gap-8 items-start justify-center mt-2 mb-4">
-        
-        <div className="bg-gray-800 p-8 rounded-xl shadow-lg w-full lg:w-1/2">
+        {/* Formulario */}
+        <motion.div
+          initial={{ opacity: 0, x: -30 }}
+          animate={{ opacity: 1, x: 0 }}
+          transition={{ duration: 0.5, delay: 0.1 }}
+          className="bg-gray-800 p-8 rounded-xl shadow-lg w-full lg:w-1/2 border border-gray-700/50"
+        >
           <form onSubmit={handleCalculate} className="space-y-6">
-            
             <div className="flex flex-col">
               <label className="text-sm text-gray-400 mb-1">Impresora</label>
-              <select 
+              <select
                 required
-                value={selectedPrinterId} 
+                value={selectedPrinterId}
                 onChange={handlePrinterChange}
-                className="bg-gray-700 rounded-md p-2 text-white focus:outline-none focus:ring-2 focus:ring-blue-500" 
+                className="bg-gray-700 rounded-md p-2 text-white focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all"
               >
-                <option value="" disabled>Selecciona una impresora...</option>
-                {printers.map(printer => (
-                  <option key={getPrinterId(printer)} value={getPrinterId(printer)}>
+                <option value="" disabled>
+                  Selecciona una impresora...
+                </option>
+                {printers.map((printer) => (
+                  <option
+                    key={getPrinterId(printer)}
+                    value={getPrinterId(printer)}
+                  >
                     {printer.name} {isMulticolor(printer) ? "(Multi-color)" : ""}
                   </option>
                 ))}
@@ -217,200 +243,333 @@ export default function InitialPage() {
             <div className="grid grid-cols-2 gap-4">
               <div className="flex flex-col">
                 <label className="text-sm text-gray-400 mb-1">Horas</label>
-                <input 
-                  type="number" min="0" required
-                  value={hours} 
+                <input
+                  type="number"
+                  min="0"
+                  required
+                  value={hours}
                   onChange={(e) => setHours(e.target.value)}
-                  className="bg-gray-700 rounded-md p-2 text-white focus:outline-none focus:ring-2 focus:ring-blue-500" 
+                  className="bg-gray-700 rounded-md p-2 text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
                 />
               </div>
               <div className="flex flex-col">
                 <label className="text-sm text-gray-400 mb-1">Minutos</label>
-                <input 
-                  type="number" min="0" required
-                  value={minutes} 
+                <input
+                  type="number"
+                  min="0"
+                  required
+                  value={minutes}
                   onChange={(e) => setMinutes(e.target.value)}
-                  className="bg-gray-700 rounded-md p-2 text-white focus:outline-none focus:ring-2 focus:ring-blue-500" 
+                  className="bg-gray-700 rounded-md p-2 text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
                 />
               </div>
             </div>
 
+            {/* Filamentos animables */}
             <div className="space-y-4">
               <label className="text-sm text-gray-400 font-semibold border-b border-gray-600 pb-1 block">
                 Filamentos Usados
               </label>
-              
-              {selectedFilaments.map((item, index) => (
-                <div key={`fil-${index}`} className="flex gap-2 items-end bg-gray-750 p-3 rounded-md border border-gray-700">
-                  <div className="flex flex-col flex-grow">
-                    <label className="text-xs text-gray-400 mb-1">Material</label>
-                    <select 
-                      required
-                      value={item.filamentID} 
-                      onChange={(e) => handleFilamentChange(index, "filamentID", e.target.value)}
-                      className="bg-gray-700 rounded-md p-2 text-white focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm" 
-                    >
-                      <option value="" disabled>Seleccionar...</option>
-                      {availableFilaments.map(fil => {
-                        const filId = String(fil.id || fil._id);
-                        const isAlreadySelected = selectedFilaments.some(
-                          (selected, i) => i !== index && String(selected.filamentID) === filId
-                        );
 
-                        return (
-                          <option 
-                            key={filId} 
-                            value={filId} 
-                            disabled={isAlreadySelected}
-                          >
-                            {fil.type} {fil.colour} - {fil.manufacturer} {isAlreadySelected ? "(Ya seleccionado)" : ""}
-                          </option>
-                        );
-                      })}
-                    </select>
-                  </div>
-                  <div className="flex flex-col w-24">
-                    <label className="text-xs text-gray-400 mb-1">Cant. (g)</label>
-                    <input 
-                      type="number" min="0" required step="any"
-                      value={item.amount} 
-                      onChange={(e) => handleFilamentChange(index, "amount", e.target.value)}
-                      className="bg-gray-700 rounded-md p-2 text-white focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm" 
-                    />
-                  </div>
-                  {selectedFilaments.length > 1 && (
-                    <button 
-                      type="button" onClick={() => removeFilamentRow(index)}
-                      className="bg-red-600/80 hover:bg-red-500 text-white p-2 rounded-md transition-colors"
-                    >✕</button>
-                  )}
-                </div>
-              ))}
-              
+              <AnimatePresence initial={false}>
+                {selectedFilaments.map((item, index) => (
+                  <motion.div
+                    key={`fil-${index}`}
+                    initial={{ opacity: 0, height: 0, y: -10 }}
+                    animate={{ opacity: 1, height: "auto", y: 0 }}
+                    exit={{ opacity: 0, height: 0, y: -10 }}
+                    transition={{ duration: 0.25 }}
+                    className="flex gap-2 items-end bg-gray-750 p-3 rounded-md border border-gray-700 overflow-hidden"
+                  >
+                    <div className="flex flex-col flex-grow">
+                      <label className="text-xs text-gray-400 mb-1">
+                        Material
+                      </label>
+                      <select
+                        required
+                        value={item.filamentID}
+                        onChange={(e) =>
+                          handleFilamentChange(index, "filamentID", e.target.value)
+                        }
+                        className="bg-gray-700 rounded-md p-2 text-white focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
+                      >
+                        <option value="" disabled>
+                          Seleccionar...
+                        </option>
+                        {availableFilaments.map((fil) => {
+                          const filId = String(fil.id || fil._id);
+                          const isAlreadySelected = selectedFilaments.some(
+                            (selected, i) =>
+                              i !== index && String(selected.filamentID) === filId
+                          );
+
+                          return (
+                            <option
+                              key={filId}
+                              value={filId}
+                              disabled={isAlreadySelected}
+                            >
+                              {fil.type} {fil.colour} - {fil.manufacturer}{" "}
+                              {isAlreadySelected ? "(Ya seleccionado)" : ""}
+                            </option>
+                          );
+                        })}
+                      </select>
+                    </div>
+
+                    <div className="flex flex-col w-24">
+                      <label className="text-xs text-gray-400 mb-1">
+                        Cant. (g)
+                      </label>
+                      <input
+                        type="number"
+                        min="0"
+                        required
+                        step="any"
+                        value={item.amount}
+                        onChange={(e) =>
+                          handleFilamentChange(index, "amount", e.target.value)
+                        }
+                        className="bg-gray-700 rounded-md p-2 text-white focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
+                      />
+                    </div>
+
+                    {selectedFilaments.length > 1 && (
+                      <motion.button
+                        whileHover={{ scale: 1.05 }}
+                        whileTap={{ scale: 0.95 }}
+                        type="button"
+                        onClick={() => removeFilamentRow(index)}
+                        className="bg-red-600/80 hover:bg-red-500 text-white p-2 rounded-md transition-colors"
+                      >
+                        ✕
+                      </motion.button>
+                    )}
+                  </motion.div>
+                ))}
+              </AnimatePresence>
+
               {isCurrentPrinterMulti && (
-                <button 
-                  type="button" onClick={addFilamentRow}
+                <motion.button
+                  whileHover={{ scale: 1.01 }}
+                  whileTap={{ scale: 0.98 }}
+                  type="button"
+                  onClick={addFilamentRow}
                   className="w-full border-2 border-dashed border-gray-600 text-gray-400 hover:text-white hover:border-gray-400 transition-colors py-2 rounded-md text-sm font-semibold"
                 >
                   + Agregar otro filamento
-                </button>
+                </motion.button>
               )}
             </div>
 
+            {/* Costos adicionales animables */}
             <div className="space-y-4">
               <div className="flex justify-between items-end border-b border-gray-600 pb-1">
-                <label className="text-sm text-gray-400 font-semibold">Costos Adicionales (Opcional)</label>
+                <label className="text-sm text-gray-400 font-semibold">
+                  Costos Adicionales (Opcional)
+                </label>
               </div>
-              
-              {additionalCostsList.map((item, index) => (
-                <div key={`cost-${index}`} className="flex gap-2 items-end bg-gray-750 p-3 rounded-md border border-gray-700">
-                  <div className="flex flex-col flex-grow">
-                    <label className="text-xs text-gray-400 mb-1">Concepto</label>
-                    <input 
-                      type="text" required placeholder="Ej: Pintura, Tornillos..."
-                      value={item.name} 
-                      onChange={(e) => handleAdditionalCostChange(index, "name", e.target.value)}
-                      className="bg-gray-700 rounded-md p-2 text-white focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm" 
-                    />
-                  </div>
-                  <div className="flex flex-col w-20">
-                    <label className="text-xs text-gray-400 mb-1">Cant.</label>
-                    <input 
-                      type="number" min="1" required step="any"
-                      value={item.quantity} 
-                      onChange={(e) => handleAdditionalCostChange(index, "quantity", e.target.value)}
-                      className="bg-gray-700 rounded-md p-2 text-white focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm" 
-                    />
-                  </div>
-                  <div className="flex flex-col w-24">
-                    <label className="text-xs text-gray-400 mb-1">Precio Un.</label>
-                    <input 
-                      type="number" min="0" required step="any"
-                      value={item.unitPrice} 
-                      onChange={(e) => handleAdditionalCostChange(index, "unitPrice", e.target.value)}
-                      className="bg-gray-700 rounded-md p-2 text-white focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm" 
-                    />
-                  </div>
-                  <button 
-                    type="button" onClick={() => removeAdditionalCostRow(index)}
-                    className="bg-red-600/80 hover:bg-red-500 text-white p-2 rounded-md transition-colors"
-                  >✕</button>
-                </div>
-              ))}
-              
-              <button 
-                type="button" onClick={addAdditionalCostRow}
+
+              <AnimatePresence initial={false}>
+                {additionalCostsList.map((item, index) => (
+                  <motion.div
+                    key={`cost-${index}`}
+                    initial={{ opacity: 0, height: 0, y: -10 }}
+                    animate={{ opacity: 1, height: "auto", y: 0 }}
+                    exit={{ opacity: 0, height: 0, y: -10 }}
+                    transition={{ duration: 0.25 }}
+                    className="flex gap-2 items-end bg-gray-750 p-3 rounded-md border border-gray-700 overflow-hidden"
+                  >
+                    <div className="flex flex-col flex-grow">
+                      <label className="text-xs text-gray-400 mb-1">
+                        Concepto
+                      </label>
+                      <input
+                        type="text"
+                        required
+                        placeholder="Ej: Pintura, Tornillos..."
+                        value={item.name}
+                        onChange={(e) =>
+                          handleAdditionalCostChange(index, "name", e.target.value)
+                        }
+                        className="bg-gray-700 rounded-md p-2 text-white focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
+                      />
+                    </div>
+                    <div className="flex flex-col w-20">
+                      <label className="text-xs text-gray-400 mb-1">
+                        Cant.
+                      </label>
+                      <input
+                        type="number"
+                        min="1"
+                        required
+                        step="any"
+                        value={item.quantity}
+                        onChange={(e) =>
+                          handleAdditionalCostChange(index, "quantity", e.target.value)
+                        }
+                        className="bg-gray-700 rounded-md p-2 text-white focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
+                      />
+                    </div>
+                    <div className="flex flex-col w-24">
+                      <label className="text-xs text-gray-400 mb-1">
+                        Precio Un.
+                      </label>
+                      <input
+                        type="number"
+                        min="0"
+                        required
+                        step="any"
+                        value={item.unitPrice}
+                        onChange={(e) =>
+                          handleAdditionalCostChange(
+                            index,
+                            "unitPrice",
+                            e.target.value
+                          )
+                        }
+                        className="bg-gray-700 rounded-md p-2 text-white focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
+                      />
+                    </div>
+                    <motion.button
+                      whileHover={{ scale: 1.05 }}
+                      whileTap={{ scale: 0.95 }}
+                      type="button"
+                      onClick={() => removeAdditionalCostRow(index)}
+                      className="bg-red-600/80 hover:bg-red-500 text-white p-2 rounded-md transition-colors"
+                    >
+                      ✕
+                    </motion.button>
+                  </motion.div>
+                ))}
+              </AnimatePresence>
+
+              <motion.button
+                whileHover={{ scale: 1.01 }}
+                whileTap={{ scale: 0.98 }}
+                type="button"
+                onClick={addAdditionalCostRow}
                 className="w-full border-2 border-dashed border-gray-600 text-gray-400 hover:text-white hover:border-gray-400 transition-colors py-2 rounded-md text-sm font-semibold"
               >
                 + Agregar costo adicional
-              </button>
+              </motion.button>
             </div>
 
-            {error && <p className="text-red-500 text-sm font-semibold">{error}</p>}
+            {/* Error animado */}
+            <AnimatePresence>
+              {error && (
+                <motion.p
+                  initial={{ opacity: 0, y: -5 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0 }}
+                  className="text-red-400 text-sm font-semibold bg-red-950/40 border border-red-800 p-2.5 rounded-md"
+                >
+                  {error}
+                </motion.p>
+              )}
+            </AnimatePresence>
 
-            <button 
-              type="submit" 
+            <motion.button
+              whileHover={{ scale: 1.02 }}
+              whileTap={{ scale: 0.98 }}
+              type="submit"
               disabled={isLoading || !selectedPrinterId}
-              className="w-full bg-blue-600 hover:bg-blue-500 transition-colors font-bold py-3 rounded-md mt-4 disabled:opacity-50 disabled:cursor-not-allowed"
+              className="w-full bg-blue-600 hover:bg-blue-500 transition-colors font-bold py-3 rounded-md mt-4 disabled:opacity-50 disabled:cursor-not-allowed shadow-md"
             >
               {isLoading ? "Calculando..." : "Calcular Costo Final"}
-            </button>
+            </motion.button>
           </form>
-        </div>
+        </motion.div>
 
-        {result && (
-          <div className="bg-gray-800 border border-gray-600 p-8 rounded-xl shadow-lg w-full lg:w-1/2 transition-all animate-fade-in sticky top-4">
-            <h2 className="text-3xl font-bold mb-2 text-center text-blue-400">
-              Costo Final: ${result.finalCost?.toFixed(2) || 0}
-            </h2>
-            <p className="text-green-400 text-center text-lg font-semibold mb-6">
-              Ganancia: ${result.profit?.toFixed(2) || 0}
-            </p>
+        {/* Tarjeta de Resultados con animación de entrada */}
+        <AnimatePresence>
+          {result && (
+            <motion.div
+              initial={{ opacity: 0, scale: 0.9, x: 20 }}
+              animate={{ opacity: 1, scale: 1, x: 0 }}
+              exit={{ opacity: 0, scale: 0.9, x: 20 }}
+              transition={{ duration: 0.35, ease: "easeOut" }}
+              className="bg-gray-800 border border-gray-700 p-8 rounded-xl shadow-xl w-full lg:w-1/2 sticky top-4"
+            >
+              <h2 className="text-3xl font-bold mb-2 text-center text-blue-400">
+                Costo Final: ${result.finalCost?.toFixed(2) || 0}
+              </h2>
+              <p className="text-green-400 text-center text-lg font-semibold mb-6">
+                Ganancia: ${result.profit?.toFixed(2) || 0}
+              </p>
 
-            <div className="space-y-4 text-sm">
-              <div className="bg-gray-750 p-4 rounded-lg border border-gray-700">
-                <h3 className="text-lg font-semibold text-gray-200 mb-3 border-b border-gray-600 pb-1">Uso de Impresora</h3>
-                <div className="flex justify-between text-gray-300 mb-2">
-                  <span>Electricidad:</span>
-                  <span className="font-medium">${result.printerCost?.wattsCost?.toFixed(2) || 0}</span>
-                </div>
-                <div className="flex justify-between text-gray-300">
-                  <span>Desgaste:</span>
-                  <span className="font-medium">${result.printerCost?.wearCostPrint?.toFixed(2) || 0}</span>
-                </div>
-              </div>
-
-              {result.filamentCosts && result.filamentCosts.length > 0 && (
+              <div className="space-y-4 text-sm">
                 <div className="bg-gray-750 p-4 rounded-lg border border-gray-700">
-                  <h3 className="text-lg font-semibold text-gray-200 mb-3 border-b border-gray-600 pb-1">Filamentos</h3>
-                  {result.filamentCosts.map((fc, idx) => {
-                    const filInfo = availableFilaments.find(f => (f.id || f._id) === fc.filamentID);
-                    const filName = filInfo ? `${filInfo.type} ${filInfo.colour}` : `ID: ${fc.filamentID}`;
-                    return (
-                      <div key={`res-fil-${idx}`} className="flex justify-between text-gray-300 mb-2 last:mb-0">
-                        <span>{filName} ({fc.amount}g):</span>
-                        <span className="font-medium">${fc.finalCost?.toFixed(2) || 0}</span>
+                  <h3 className="text-lg font-semibold text-gray-200 mb-3 border-b border-gray-600 pb-1">
+                    Uso de Impresora
+                  </h3>
+                  <div className="flex justify-between text-gray-300 mb-2">
+                    <span>Electricidad:</span>
+                    <span className="font-medium">
+                      ${result.printerCost?.wattsCost?.toFixed(2) || 0}
+                    </span>
+                  </div>
+                  <div className="flex justify-between text-gray-300">
+                    <span>Desgaste:</span>
+                    <span className="font-medium">
+                      ${result.printerCost?.wearCostPrint?.toFixed(2) || 0}
+                    </span>
+                  </div>
+                </div>
+
+                {result.filamentCosts && result.filamentCosts.length > 0 && (
+                  <div className="bg-gray-750 p-4 rounded-lg border border-gray-700">
+                    <h3 className="text-lg font-semibold text-gray-200 mb-3 border-b border-gray-600 pb-1">
+                      Filamentos
+                    </h3>
+                    {result.filamentCosts.map((fc, idx) => {
+                      const filInfo = availableFilaments.find(
+                        (f) => (f.id || f._id) === fc.filamentID
+                      );
+                      const filName = filInfo
+                        ? `${filInfo.type} ${filInfo.colour}`
+                        : `ID: ${fc.filamentID}`;
+                      return (
+                        <div
+                          key={`res-fil-${idx}`}
+                          className="flex justify-between text-gray-300 mb-2 last:mb-0"
+                        >
+                          <span>
+                            {filName} ({fc.amount}g):
+                          </span>
+                          <span className="font-medium">
+                            ${fc.finalCost?.toFixed(2) || 0}
+                          </span>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+
+                {result.additionalCost && result.additionalCost.length > 0 && (
+                  <div className="bg-gray-750 p-4 rounded-lg border border-gray-700">
+                    <h3 className="text-lg font-semibold text-gray-200 mb-3 border-b border-gray-600 pb-1">
+                      Costos Adicionales
+                    </h3>
+                    {result.additionalCost.map((ac, idx) => (
+                      <div
+                        key={`res-add-${idx}`}
+                        className="flex justify-between text-gray-300 mb-2 last:mb-0"
+                      >
+                        <span>
+                          {ac.costName} (x{ac.quantity}):
+                        </span>
+                        <span className="font-medium">
+                          ${ac.totalCost?.toFixed(2) || 0}
+                        </span>
                       </div>
-                    );
-                  })}
-                </div>
-              )}
-
-              {result.additionalCost && result.additionalCost.length > 0 && (
-                <div className="bg-gray-750 p-4 rounded-lg border border-gray-700">
-                  <h3 className="text-lg font-semibold text-gray-200 mb-3 border-b border-gray-600 pb-1">Costos Adicionales</h3>
-                  {result.additionalCost.map((ac, idx) => (
-                    <div key={`res-add-${idx}`} className="flex justify-between text-gray-300 mb-2 last:mb-0">
-                      <span>{ac.costName} (x{ac.quantity}):</span>
-                      <span className="font-medium">${ac.totalCost?.toFixed(2) || 0}</span>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </div>
-          </div>
-        )}
-
+                    ))}
+                  </div>
+                )}
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
       </div>
     </div>
   );
