@@ -16,7 +16,6 @@ El frontend de Emifer 3D proporciona una interfaz interactiva donde los clientes
 ## ✨ Características Principales
 
 * **Calculadora Interactiva:** Interfaz optimizada con animaciones fluidas para el ingreso de parámetros de impresión 3D.
-* **Diseño Responsivo & Moderno:** Construido con Utility-First CSS para adaptarse a dispositivos móviles y de escritorio.
 * **Autenticación JWT:** Integración segura mediante tokens de acceso consumidos desde la API REST en Spring Boot.
 * **Arquitectura Containerizada:** Servido a través de un contenedor Nginx optimizado y ligero.
 
