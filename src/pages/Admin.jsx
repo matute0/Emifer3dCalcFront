@@ -1,4 +1,8 @@
 import { Link, useNavigate } from "react-router-dom";
+import { motion } from "framer-motion";
+
+// Creamos un componente Link animable con Framer Motion
+const MotionLink = motion(Link);
 
 export default function AdminMenu() {
   const API_URL = import.meta.env.VITE_API_URL;
@@ -53,10 +57,37 @@ export default function AdminMenu() {
     },
   ];
 
+  // Variantes para escalonar la entrada de las tarjetas
+  const containerVariants = {
+    hidden: { opacity: 0 },
+    visible: {
+      opacity: 1,
+      transition: {
+        staggerChildren: 0.12,
+        delayChildren: 0.1,
+      },
+    },
+  };
+
+  const cardVariants = {
+    hidden: { opacity: 0, y: 25 },
+    visible: {
+      opacity: 1,
+      y: 0,
+      transition: { duration: 0.4, ease: "easeOut" },
+    },
+  };
+
   return (
     <div className="min-h-screen bg-gray-900 text-white flex flex-col items-center px-4 py-8">
       
-      <div className="w-full max-w-5xl flex justify-between items-center mb-10">
+      {/* Header Animado */}
+      <motion.div 
+        initial={{ opacity: 0, y: -20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.5 }}
+        className="w-full max-w-5xl flex justify-between items-center mb-10"
+      >
         <div>
           <h1 className="text-3xl font-extrabold bg-gradient-to-r from-blue-400 via-sky-200 to-indigo-300 bg-clip-text text-transparent">
             Panel de Administración
@@ -66,9 +97,11 @@ export default function AdminMenu() {
           </p>
         </div>
         
-        <button 
+        <motion.button 
+          whileHover={{ scale: 1.03 }}
+          whileTap={{ scale: 0.95 }}
           onClick={handleLogout}
-          className="group relative inline-flex items-center gap-2 px-5 py-2.5 rounded-xl font-medium text-sm text-red-200 bg-gradient-to-r from-red-950/60 via-red-900/40 to-rose-950/60 border border-red-500/30 hover:border-red-400/80 shadow-lg hover:shadow-red-500/20 hover:text-white transition-all duration-300 ease-out hover:scale-[1.03] active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed overflow-hidden"
+          className="group relative inline-flex items-center gap-2 px-5 py-2.5 rounded-xl font-medium text-sm text-red-200 bg-gradient-to-r from-red-950/60 via-red-900/40 to-rose-950/60 border border-red-500/30 hover:border-red-400/80 shadow-lg hover:shadow-red-500/20 hover:text-white transition-all duration-300 ease-out overflow-hidden"
         >
           {/* Destello de luz diagonal */}
           <span className="absolute inset-0 w-full h-full bg-gradient-to-r from-transparent via-red-500/15 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-1000 ease-out" />
@@ -83,19 +116,28 @@ export default function AdminMenu() {
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
           </svg>
           
-          <span className="relative z-10">{"Cerrar Sesión"}</span>
-        </button>
-      </div>
+          <span className="relative z-10">Cerrar Sesión</span>
+        </motion.button>
+      </motion.div>
 
-      <div className="w-full max-w-5xl grid grid-cols-1 md:grid-cols-3 gap-6">
+      {/* Grid de Secciones con entrada en cascada */}
+      <motion.div 
+        variants={containerVariants}
+        initial="hidden"
+        animate="visible"
+        className="w-full max-w-5xl grid grid-cols-1 md:grid-cols-3 gap-6"
+      >
         {adminSections.map((section, index) => (
-          <Link
+          <MotionLink
             key={index}
             to={section.path}
-            className="group bg-gray-800 border border-gray-700 hover:border-blue-500/50 p-6 rounded-xl shadow-lg transition-all transform hover:-translate-y-1 flex flex-col justify-between"
+            variants={cardVariants}
+            whileHover={{ y: -6, transition: { duration: 0.2 } }}
+            whileTap={{ scale: 0.98 }}
+            className="group bg-gray-800 border border-gray-700 hover:border-blue-500/50 p-6 rounded-xl shadow-lg transition-colors flex flex-col justify-between"
           >
             <div>
-              <div className="p-3 bg-gray-700/50 rounded-lg w-fit mb-4 group-hover:scale-110 transition-transform">
+              <div className="p-3 bg-gray-700/50 rounded-lg w-fit mb-4 group-hover:scale-110 transition-transform duration-300">
                 {section.icon}
               </div>
               <h2 className="text-xl font-bold text-white group-hover:text-blue-400 transition-colors">
@@ -108,13 +150,13 @@ export default function AdminMenu() {
 
             <div className="mt-6 flex items-center text-sm font-semibold text-blue-400 group-hover:text-blue-300">
               Administrar
-              <svg className="w-4 h-4 ml-1 group-hover:translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <svg className="w-4 h-4 ml-1 group-hover:translate-x-1 transition-transform duration-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5l7 7-7 7" />
               </svg>
             </div>
-          </Link>
+          </MotionLink>
         ))}
-      </div>
+      </motion.div>
 
     </div>
   );

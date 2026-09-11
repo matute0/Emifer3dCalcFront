@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
+import { motion, AnimatePresence } from "framer-motion";
 
 export default function FilamentsManager() {
   const API_URL = import.meta.env.VITE_API_URL;
@@ -18,16 +19,16 @@ export default function FilamentsManager() {
   const [error, setError] = useState(null);
   const [successMsg, setSuccessMsg] = useState(null);
 
-const safeJsonParse = async (response) => {
-  const text = await response.text();
-  if (!text) return null;
+  const safeJsonParse = async (response) => {
+    const text = await response.text();
+    if (!text) return null;
 
-  try {
-    return JSON.parse(text);
-  } catch (_) {
-    return { message: text };
-  }
-};
+    try {
+      return JSON.parse(text);
+    } catch (_) {
+      return { message: text };
+    }
+  };
 
   const fetchFilaments = async () => {
     try {
@@ -157,7 +158,12 @@ const safeJsonParse = async (response) => {
   return (
     <div className="min-h-screen bg-gray-900 text-white flex flex-col items-center px-4 py-8">
       {/* Header */}
-      <div className="w-full max-w-6xl flex justify-between items-center mb-8">
+      <motion.div 
+        initial={{ opacity: 0, y: -15 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.4 }}
+        className="w-full max-w-6xl flex justify-between items-center mb-8"
+      >
         <div>
           <h1 className="text-3xl font-extrabold bg-gradient-to-r from-emerald-400 via-teal-200 to-cyan-300 bg-clip-text text-transparent">
             Gestión de Filamentos
@@ -166,31 +172,51 @@ const safeJsonParse = async (response) => {
             Agrega o modifica los materiales de tu catálogo
           </p>
         </div>
-        <Link
-          to="/admin"
-          className="bg-gray-800 hover:bg-gray-700 text-gray-300 text-sm font-medium py-2 px-4 rounded-md border border-gray-700 transition-colors"
-        >
-          ← Volver al Menú Admin
-        </Link>
-      </div>
+        <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
+          <Link
+            to="/admin"
+            className="bg-gray-800 hover:bg-gray-700 text-gray-300 text-sm font-medium py-2 px-4 rounded-md border border-gray-700 transition-colors inline-block"
+          >
+            ← Volver al Menú Admin
+          </Link>
+        </motion.div>
+      </motion.div>
 
-      {/* Mensajes globales */}
+      {/* Mensajes globales dinámicos */}
       <div className="w-full max-w-6xl mb-4">
-        {error && (
-          <div className="bg-red-900/40 border border-red-500/50 text-red-200 p-3 rounded-md text-sm mb-2">
-            {error}
-          </div>
-        )}
-        {successMsg && (
-          <div className="bg-green-900/40 border border-green-500/50 text-green-200 p-3 rounded-md text-sm mb-2">
-            {successMsg}
-          </div>
-        )}
+        <AnimatePresence mode="wait">
+          {error && (
+            <motion.div
+              key="error-msg"
+              initial={{ opacity: 0, y: -10, height: 0 }}
+              animate={{ opacity: 1, y: 0, height: "auto" }}
+              exit={{ opacity: 0, y: -10, height: 0 }}
+              className="bg-red-900/40 border border-red-500/50 text-red-200 p-3 rounded-md text-sm mb-2 overflow-hidden"
+            >
+              {error}
+            </motion.div>
+          )}
+          {successMsg && (
+            <motion.div
+              key="success-msg"
+              initial={{ opacity: 0, y: -10, height: 0 }}
+              animate={{ opacity: 1, y: 0, height: "auto" }}
+              exit={{ opacity: 0, y: -10, height: 0 }}
+              className="bg-green-900/40 border border-green-500/50 text-green-200 p-3 rounded-md text-sm mb-2 overflow-hidden"
+            >
+              {successMsg}
+            </motion.div>
+          )}
+        </AnimatePresence>
       </div>
 
       <div className="w-full max-w-6xl flex flex-col lg:flex-row gap-8 items-start">
         {/* Formulario (Menú Izquierdo) */}
-        <div
+        <motion.div
+          layout
+          initial={{ opacity: 0, x: -20 }}
+          animate={{ opacity: 1, x: 0 }}
+          transition={{ duration: 0.4 }}
           className={`p-6 rounded-xl shadow-lg w-full lg:w-1/3 transition-all duration-300 ${
             editingId
               ? "bg-gray-800 border-2 border-emerald-500 ring-4 ring-emerald-500/20 shadow-emerald-500/10"
@@ -210,12 +236,14 @@ const safeJsonParse = async (response) => {
               )}
             </div>
             {editingId && (
-              <button
+              <motion.button
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
                 onClick={handleResetForm}
                 className="text-xs text-gray-400 hover:text-white underline"
               >
                 Cancelar edición
-              </button>
+              </motion.button>
             )}
           </div>
 
@@ -273,7 +301,9 @@ const safeJsonParse = async (response) => {
               />
             </div>
 
-            <button
+            <motion.button
+              whileHover={{ scale: 1.02 }}
+              whileTap={{ scale: 0.98 }}
               type="submit"
               disabled={isLoading}
               className={`w-full font-bold py-2.5 rounded-md text-sm mt-4 disabled:opacity-50 transition-colors ${
@@ -287,12 +317,17 @@ const safeJsonParse = async (response) => {
                 : editingId
                 ? "Actualizar Filamento"
                 : "Registrar Filamento"}
-            </button>
+            </motion.button>
           </form>
-        </div>
+        </motion.div>
 
         {/* Tabla de Filamentos */}
-        <div className="bg-gray-800 border border-gray-700 p-6 rounded-xl shadow-lg w-full lg:w-2/3 overflow-x-auto">
+        <motion.div 
+          initial={{ opacity: 0, x: 20 }}
+          animate={{ opacity: 1, x: 0 }}
+          transition={{ duration: 0.4 }}
+          className="bg-gray-800 border border-gray-700 p-6 rounded-xl shadow-lg w-full lg:w-2/3 overflow-x-auto"
+        >
           <h2 className="text-xl font-bold text-white mb-4">
             Listado de Filamentos
           </h2>
@@ -313,58 +348,73 @@ const safeJsonParse = async (response) => {
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-700">
-                {filaments.map((filament) => {
-                  const id = getFilamentId(filament);
-                  const isBeingEdited = editingId === id;
+                <AnimatePresence>
+                  {filaments.map((filament) => {
+                    const id = getFilamentId(filament);
+                    const isBeingEdited = editingId === id;
 
-                  return (
-                    <tr
-                      key={id}
-                      className={`transition-colors ${
-                        isBeingEdited
-                          ? "bg-emerald-950/60 border-l-4 border-l-emerald-500"
-                          : "hover:bg-gray-750/50"
-                      }`}
-                    >
-                      <td className="py-3 px-3 font-semibold text-white">
-                        {filament.type}
-                        {isBeingEdited && (
-                          <span className="ml-2 text-xs text-emerald-300 bg-emerald-900/60 px-2 py-0.5 rounded border border-emerald-700 font-normal">
-                            Editando
-                          </span>
-                        )}
-                      </td>
-                      <td className="py-3 px-3">{filament.colour}</td>
-                      <td className="py-3 px-3">{filament.manufacturer}</td>
-                      <td className="py-3 px-3">${filament.price}</td>
-                      <td className="py-3 px-3 text-right">
-                        <div className="flex justify-end gap-2">
-                          <button
-                            onClick={() => handleEditClick(filament)}
-                            className={`px-2.5 py-1 rounded text-xs transition-colors ${
-                              isBeingEdited
-                                ? "bg-emerald-500 text-white font-semibold"
-                                : "bg-emerald-600/80 hover:bg-emerald-500 text-white"
-                            }`}
-                          >
-                            {isBeingEdited ? "En edición" : "Editar"}
-                          </button>
+                    return (
+                      <motion.tr
+                        key={id}
+                        layout
+                        initial={{ opacity: 0, y: 10 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        exit={{ opacity: 0, height: 0 }}
+                        transition={{ duration: 0.25 }}
+                        className={`transition-colors ${
+                          isBeingEdited
+                            ? "bg-emerald-950/60 border-l-4 border-l-emerald-500"
+                            : "hover:bg-gray-750/50"
+                        }`}
+                      >
+                        <td className="py-3 px-3 font-semibold text-white">
+                          {filament.type}
+                          {isBeingEdited && (
+                            <motion.span 
+                              initial={{ scale: 0 }}
+                              animate={{ scale: 1 }}
+                              className="ml-2 text-xs text-emerald-300 bg-emerald-900/60 px-2 py-0.5 rounded border border-emerald-700 font-normal inline-block"
+                            >
+                              Editando
+                            </motion.span>
+                          )}
+                        </td>
+                        <td className="py-3 px-3">{filament.colour}</td>
+                        <td className="py-3 px-3">{filament.manufacturer}</td>
+                        <td className="py-3 px-3">${filament.price}</td>
+                        <td className="py-3 px-3 text-right">
+                          <div className="flex justify-end gap-2">
+                            <motion.button
+                              whileHover={{ scale: 1.05 }}
+                              whileTap={{ scale: 0.95 }}
+                              onClick={() => handleEditClick(filament)}
+                              className={`px-2.5 py-1 rounded text-xs transition-colors ${
+                                isBeingEdited
+                                  ? "bg-emerald-500 text-white font-semibold"
+                                  : "bg-emerald-600/80 hover:bg-emerald-500 text-white"
+                              }`}
+                            >
+                              {isBeingEdited ? "En edición" : "Editar"}
+                            </motion.button>
 
-                          <button
-                            onClick={() => handleDelete(id)}
-                            className="bg-red-600/80 hover:bg-red-500 text-white px-2.5 py-1 rounded text-xs transition-colors"
-                          >
-                            Eliminar
-                          </button>
-                        </div>
-                      </td>
-                    </tr>
-                  );
-                })}
+                            <motion.button
+                              whileHover={{ scale: 1.05 }}
+                              whileTap={{ scale: 0.95 }}
+                              onClick={() => handleDelete(id)}
+                              className="bg-red-600/80 hover:bg-red-500 text-white px-2.5 py-1 rounded text-xs transition-colors"
+                            >
+                              Eliminar
+                            </motion.button>
+                          </div>
+                        </td>
+                      </motion.tr>
+                    );
+                  })}
+                </AnimatePresence>
               </tbody>
             </table>
           )}
-        </div>
+        </motion.div>
       </div>
     </div>
   );
