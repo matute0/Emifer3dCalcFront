@@ -2,6 +2,10 @@ import { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 
+// Reglas de validación con expresiones regulares
+const REGEX_NAME = /^[a-zA-ZáéíóúÁÉÍÓÚñÑüÜ0-9\s.\-/]+$/;
+const REGEX_MANUFACTURER = /^[a-zA-ZáéíóúÁÉÍÓÚñÑüÜ0-9\s.\-&]+$/;
+
 export default function PrintersManager() {
   const API_URL = import.meta.env.VITE_API_URL;
 
@@ -20,14 +24,28 @@ export default function PrintersManager() {
   const [error, setError] = useState(null);
   const [successMsg, setSuccessMsg] = useState(null);
 
+  // Estados para validación en tiempo real
+  const [fieldErrors, setFieldErrors] = useState({});
+  const [touched, setTouched] = useState({});
+
+  const safeJsonParse = async (response) => {
+    const text = await response.text();
+    if (!text) return null;
+    try {
+      return JSON.parse(text);
+    } catch (_) {
+      return { message: text };
+    }
+  };
+
   const fetchPrinters = async () => {
     try {
       const response = await fetch(`${API_URL}/printer/list`, {
         credentials: "include",
       });
       if (response.ok) {
-        const data = await response.json();
-        setPrinters(data);
+        const data = await safeJsonParse(response);
+        setPrinters(data || []);
       }
     } catch (err) {
       console.error("Error al cargar impresoras:", err);
@@ -40,18 +58,73 @@ export default function PrintersManager() {
 
   const getPrinterId = (printer) => String(printer.id || printer._id || "");
 
+  // Función de validación en tiempo real
+  const validate = (data, currentEditingId, list) => {
+    const errors = {};
+
+    // Validar Nombre
+    if (!data.name || !data.name.trim()) {
+      errors.name = "El nombre de la impresora es obligatorio.";
+    } else if (!REGEX_NAME.test(data.name)) {
+      errors.name = "Solo letras, números, espacios y caracteres '.', '-', '/'.";
+    }
+
+    // Validar Fabricante
+    if (!data.manufacturer || !data.manufacturer.trim()) {
+      errors.manufacturer = "El fabricante es obligatorio.";
+    } else if (!REGEX_MANUFACTURER.test(data.manufacturer)) {
+      errors.manufacturer = "Solo letras, números, espacios y caracteres '.', '-', '&'.";
+    }
+
+    // Validar Watts
+    if (Number(data.watts) <= 0 || isNaN(Number(data.watts))) {
+      errors.watts = "El consumo en Watts debe ser mayor a 0.";
+    }
+
+    // Validar Costo de Desgaste
+    if (Number(data.wearCost) < 0 || isNaN(Number(data.wearCost))) {
+      errors.wearCost = "El costo de desgaste no puede ser negativo.";
+    }
+
+    // Validar Duplicados en tiempo real (Nombre + Fabricante)
+    if (!errors.name && !errors.manufacturer) {
+      const isDuplicate = list.some((item) => {
+        const itemId = getPrinterId(item);
+        const matches =
+          item.name?.trim().toLowerCase() === data.name.trim().toLowerCase() &&
+          item.manufacturer?.trim().toLowerCase() === data.manufacturer.trim().toLowerCase();
+
+        return currentEditingId ? matches && itemId !== currentEditingId : matches;
+      });
+
+      if (isDuplicate) {
+        errors.duplicate = "Ya existe una impresora registrada con este Nombre y Fabricante.";
+      }
+    }
+
+    return errors;
+  };
+
+  // Ejecuta validación cada vez que cambia el formulario, la lista o el modo de edición
+  useEffect(() => {
+    const errors = validate(formData, editingId, printers);
+    setFieldErrors(errors);
+  }, [formData, editingId, printers]);
+
   const handleInputChange = (e) => {
     const { name, value, type, checked } = e.target;
     setFormData((prev) => ({
       ...prev,
       [name]: type === "checkbox" ? checked : value,
     }));
+    setTouched((prev) => ({ ...prev, [name]: true }));
   };
 
   const handleResetForm = () => {
     setFormData(initialFormState);
     setEditingId(null);
     setError(null);
+    setTouched({});
   };
 
   const handleEditClick = async (id) => {
@@ -62,7 +135,7 @@ export default function PrintersManager() {
         credentials: "include",
       });
       if (response.ok) {
-        const data = await response.json();
+        const data = await safeJsonParse(response);
         setFormData({
           name: data.name || "",
           manufacturer: data.manufacturer || "",
@@ -71,6 +144,12 @@ export default function PrintersManager() {
           wearCost: data.wearCost || 0,
         });
         setEditingId(id);
+        setTouched({
+          name: true,
+          manufacturer: true,
+          watts: true,
+          wearCost: true,
+        });
       } else {
         setError("No se pudieron obtener los detalles de la impresora.");
       }
@@ -80,15 +159,31 @@ export default function PrintersManager() {
     }
   };
 
+  const isFormInvalid = Object.keys(fieldErrors).length > 0;
+
   const handleSubmit = async (e) => {
     e.preventDefault();
+
+    // Marcar todos los campos como interactuados al enviar
+    setTouched({
+      name: true,
+      manufacturer: true,
+      watts: true,
+      wearCost: true,
+    });
+
+    if (isFormInvalid) {
+      setError(fieldErrors.duplicate || "Por favor corrige los errores del formulario.");
+      return;
+    }
+
     setIsLoading(true);
     setError(null);
     setSuccessMsg(null);
 
     const payload = {
-      name: String(formData.name),
-      manufacturer: String(formData.manufacturer),
+      name: String(formData.name).trim(),
+      manufacturer: String(formData.manufacturer).trim(),
       watts: Number(formData.watts),
       multiColour: Boolean(formData.multiColour),
       wearCost: Number(formData.wearCost),
@@ -108,20 +203,10 @@ export default function PrintersManager() {
         body: JSON.stringify(payload),
       });
 
-      let data = null;
-      try {
-        const responseText = await response.text();
-        if (responseText) {
-          data = JSON.parse(responseText);
-        }
-      } catch (parseError) {
-        console.warn("La respuesta no contiene JSON válido.");
-      }
+      const data = await safeJsonParse(response);
 
       if (!response.ok) {
-        throw new Error(
-          data?.message || `Error en la solicitud (${response.status})`
-        );
+        throw new Error(data?.message || `Error en la solicitud (${response.status})`);
       }
 
       setSuccessMsg(
@@ -152,8 +237,9 @@ export default function PrintersManager() {
         credentials: "include",
       });
 
+      const data = await safeJsonParse(response);
+
       if (!response.ok) {
-        const data = await response.json().catch(() => null);
         throw new Error(data?.message || "Error al eliminar la impresora.");
       }
 
@@ -165,10 +251,20 @@ export default function PrintersManager() {
     }
   };
 
+  // Helper para clases CSS según estado del campo
+  const getInputStyle = (fieldName) => {
+    const hasError = touched[fieldName] && fieldErrors[fieldName];
+    const isValid = touched[fieldName] && !fieldErrors[fieldName];
+
+    if (hasError) return "border-red-500 focus:ring-red-500 focus:border-red-500";
+    if (isValid) return "border-blue-500 focus:ring-blue-500 focus:border-blue-500";
+    return "border-gray-700 focus:ring-blue-500 focus:border-blue-500";
+  };
+
   return (
     <div className="min-h-screen bg-gray-900 text-white flex flex-col items-center px-4 py-8">
       {/* Header */}
-      <motion.div 
+      <motion.div
         initial={{ opacity: 0, y: -15 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.4 }}
@@ -257,67 +353,137 @@ export default function PrintersManager() {
             )}
           </div>
 
-          <form onSubmit={handleSubmit} className="space-y-4">
+          <form onSubmit={handleSubmit} className="space-y-4" noValidate>
+            {/* Advertencia de Duplicado */}
+            <AnimatePresence>
+              {fieldErrors.duplicate && (
+                <motion.div
+                  initial={{ opacity: 0, height: 0 }}
+                  animate={{ opacity: 1, height: "auto" }}
+                  exit={{ opacity: 0, height: 0 }}
+                  className="bg-amber-900/30 border border-amber-500/50 text-amber-200 text-xs p-2.5 rounded-md mb-2"
+                >
+                  ⚠️ {fieldErrors.duplicate}
+                </motion.div>
+              )}
+            </AnimatePresence>
+
+            {/* Campo: Nombre */}
             <div>
               <label className="text-sm text-gray-400 block mb-1">Nombre</label>
               <input
                 type="text"
                 name="name"
-                required
                 value={formData.name}
                 onChange={handleInputChange}
+                onBlur={() => setTouched((p) => ({ ...p, name: true }))}
                 placeholder="Ej: Ender 3 V2, Bambu P1P"
-                className="w-full bg-gray-700 rounded-md p-2 text-white focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
+                className={`w-full bg-gray-700 rounded-md p-2 text-white focus:outline-none focus:ring-2 text-sm border transition-colors ${getInputStyle(
+                  "name"
+                )}`}
               />
+              <AnimatePresence>
+                {touched.name && fieldErrors.name && (
+                  <motion.p
+                    initial={{ opacity: 0, y: -4 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: -4 }}
+                    className="text-xs text-red-400 mt-1"
+                  >
+                    {fieldErrors.name}
+                  </motion.p>
+                )}
+              </AnimatePresence>
             </div>
 
+            {/* Campo: Fabricante */}
             <div>
               <label className="text-sm text-gray-400 block mb-1">Fabricante</label>
               <input
                 type="text"
                 name="manufacturer"
-                required
                 value={formData.manufacturer}
                 onChange={handleInputChange}
+                onBlur={() => setTouched((p) => ({ ...p, manufacturer: true }))}
                 placeholder="Ej: Creality, Bambu Lab"
-                className="w-full bg-gray-700 rounded-md p-2 text-white focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
+                className={`w-full bg-gray-700 rounded-md p-2 text-white focus:outline-none focus:ring-2 text-sm border transition-colors ${getInputStyle(
+                  "manufacturer"
+                )}`}
               />
+              <AnimatePresence>
+                {touched.manufacturer && fieldErrors.manufacturer && (
+                  <motion.p
+                    initial={{ opacity: 0, y: -4 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: -4 }}
+                    className="text-xs text-red-400 mt-1"
+                  >
+                    {fieldErrors.manufacturer}
+                  </motion.p>
+                )}
+              </AnimatePresence>
             </div>
 
+            {/* Campos Numéricos: Watts y Costo Desgaste */}
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <label className="text-sm text-gray-400 block mb-1">
-                  Consumo (Watts)
-                </label>
+                <label className="text-sm text-gray-400 block mb-1">Consumo (Watts)</label>
                 <input
                   type="number"
                   name="watts"
                   min="0"
-                  required
                   step="any"
                   value={formData.watts}
                   onChange={handleInputChange}
-                  className="w-full bg-gray-700 rounded-md p-2 text-white focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
+                  onBlur={() => setTouched((p) => ({ ...p, watts: true }))}
+                  className={`w-full bg-gray-700 rounded-md p-2 text-white focus:outline-none focus:ring-2 text-sm border transition-colors ${getInputStyle(
+                    "watts"
+                  )}`}
                 />
+                <AnimatePresence>
+                  {touched.watts && fieldErrors.watts && (
+                    <motion.p
+                      initial={{ opacity: 0, y: -4 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      exit={{ opacity: 0, y: -4 }}
+                      className="text-xs text-red-400 mt-1"
+                    >
+                      {fieldErrors.watts}
+                    </motion.p>
+                  )}
+                </AnimatePresence>
               </div>
 
               <div>
-                <label className="text-sm text-gray-400 block mb-1">
-                  Costo Desgaste
-                </label>
+                <label className="text-sm text-gray-400 block mb-1">Costo Desgaste</label>
                 <input
                   type="number"
                   name="wearCost"
                   min="0"
-                  required
                   step="any"
                   value={formData.wearCost}
                   onChange={handleInputChange}
-                  className="w-full bg-gray-700 rounded-md p-2 text-white focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
+                  onBlur={() => setTouched((p) => ({ ...p, wearCost: true }))}
+                  className={`w-full bg-gray-700 rounded-md p-2 text-white focus:outline-none focus:ring-2 text-sm border transition-colors ${getInputStyle(
+                    "wearCost"
+                  )}`}
                 />
+                <AnimatePresence>
+                  {touched.wearCost && fieldErrors.wearCost && (
+                    <motion.p
+                      initial={{ opacity: 0, y: -4 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      exit={{ opacity: 0, y: -4 }}
+                      className="text-xs text-red-400 mt-1"
+                    >
+                      {fieldErrors.wearCost}
+                    </motion.p>
+                  )}
+                </AnimatePresence>
               </div>
             </div>
 
+            {/* Checkbox: Multi-Color */}
             <div className="flex items-center gap-2 pt-2">
               <input
                 type="checkbox"
@@ -327,18 +493,23 @@ export default function PrintersManager() {
                 onChange={handleInputChange}
                 className="w-4 h-4 rounded bg-gray-700 border-gray-600 text-blue-600 focus:ring-blue-500"
               />
-              <label htmlFor="multiColour" className="text-sm text-gray-300 cursor-pointer select-none">
+              <label
+                htmlFor="multiColour"
+                className="text-sm text-gray-300 cursor-pointer select-none"
+              >
                 Soporta Multi-Color (AMS / MMU)
               </label>
             </div>
 
             <motion.button
-              whileHover={{ scale: 1.02 }}
-              whileTap={{ scale: 0.98 }}
+              whileHover={{ scale: isFormInvalid ? 1 : 1.02 }}
+              whileTap={{ scale: isFormInvalid ? 1 : 0.98 }}
               type="submit"
-              disabled={isLoading}
-              className={`w-full font-bold py-2.5 rounded-md text-sm mt-4 disabled:opacity-50 transition-colors ${
-                editingId
+              disabled={isLoading || isFormInvalid}
+              className={`w-full font-bold py-2.5 rounded-md text-sm mt-4 transition-colors ${
+                isFormInvalid
+                  ? "bg-gray-700 text-gray-500 cursor-not-allowed"
+                  : editingId
                   ? "bg-amber-600 hover:bg-amber-500 text-white"
                   : "bg-blue-600 hover:bg-blue-500 text-white"
               }`}
@@ -353,7 +524,7 @@ export default function PrintersManager() {
         </motion.div>
 
         {/* Tabla de Impresoras */}
-        <motion.div 
+        <motion.div
           initial={{ opacity: 0, x: 20 }}
           animate={{ opacity: 1, x: 0 }}
           transition={{ duration: 0.4 }}
@@ -401,7 +572,7 @@ export default function PrintersManager() {
                         <td className="py-3 px-3 font-semibold text-white">
                           {printer.name}
                           {isBeingEdited && (
-                            <motion.span 
+                            <motion.span
                               initial={{ scale: 0 }}
                               animate={{ scale: 1 }}
                               className="ml-2 text-xs text-blue-300 bg-blue-900/60 px-2 py-0.5 rounded border border-blue-700 font-normal inline-block"

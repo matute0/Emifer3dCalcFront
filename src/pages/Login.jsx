@@ -21,7 +21,21 @@ export default function LoginPage() {
       await loginUser({ username, password });
       navigate("/admin");
     } catch (err) {
-      setError(err?.message || "Credenciales incorrectas o error de servidor");
+      const status = err?.status || err?.response?.status;
+      const message = err?.message?.toLowerCase() || '';
+
+      // Si el servidor responde 401, 400 o el mensaje indica credenciales no válidas
+      if (
+        status === 401 || 
+        status === 400 || 
+        message.includes("credencial") || 
+        message.includes("unauthorized") ||
+        message.includes("password")
+      ) {
+        setError("Credenciales incorrectas");
+      } else {
+        setError("Error de servidor");
+      }
     } finally {
       setIsLoading(false);
     }
@@ -58,7 +72,7 @@ export default function LoginPage() {
               animate={{ opacity: 1, height: "auto", y: 0 }}
               exit={{ opacity: 0, height: 0, y: -10 }}
               transition={{ duration: 0.25 }}
-              className="mb-6 p-3 bg-red-500/10 border border-red-500/50 rounded-xl text-red-400 text-sm text-center overflow-hidden"
+              className="mb-6 p-3 bg-red-500/10 border border-red-500/50 rounded-xl text-red-400 text-sm text-center overflow-hidden font-medium"
             >
               {error}
             </motion.div>
