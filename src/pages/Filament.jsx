@@ -2,6 +2,11 @@ import { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 
+// Reglas de validación idénticas al backend Java
+const REGEX_TYPE = /^[a-zA-ZáéíóúÁÉÍÓÚñÑüÜ0-9\s+-]+$/;
+const REGEX_COLOUR = /^[a-zA-ZáéíóúÁÉÍÓÚñÑüÜ\s]+$/;
+const REGEX_MANUFACTURER = /^[a-zA-ZáéíóúÁÉÍÓÚñÑüÜ0-9\s.\-&]+$/;
+
 export default function FilamentsManager() {
   const API_URL = import.meta.env.VITE_API_URL;
 
@@ -19,10 +24,13 @@ export default function FilamentsManager() {
   const [error, setError] = useState(null);
   const [successMsg, setSuccessMsg] = useState(null);
 
+  // Estados para validación en tiempo real
+  const [fieldErrors, setFieldErrors] = useState({});
+  const [touched, setTouched] = useState({});
+
   const safeJsonParse = async (response) => {
     const text = await response.text();
     if (!text) return null;
-
     try {
       return JSON.parse(text);
     } catch (_) {
@@ -50,18 +58,76 @@ export default function FilamentsManager() {
 
   const getFilamentId = (filament) => String(filament.id || filament._id || "");
 
+  // Función de validación en tiempo real
+  const validate = (data, currentEditingId, list) => {
+    const errors = {};
+
+    // Validar Tipo
+    if (!data.type || !data.type.trim()) {
+      errors.type = "El tipo de material es obligatorio.";
+    } else if (!REGEX_TYPE.test(data.type)) {
+      errors.type = "Solo letras, números, espacios y caracteres '+' o '-'.";
+    }
+
+    // Validar Color
+    if (!data.colour || !data.colour.trim()) {
+      errors.colour = "El color es obligatorio.";
+    } else if (!REGEX_COLOUR.test(data.colour)) {
+      errors.colour = "El color solo puede contener letras y espacios.";
+    }
+
+    // Validar Fabricante
+    if (!data.manufacturer || !data.manufacturer.trim()) {
+      errors.manufacturer = "El fabricante es obligatorio.";
+    } else if (!REGEX_MANUFACTURER.test(data.manufacturer)) {
+      errors.manufacturer = "Solo letras, números, espacios y caracteres '.', '-', '&'.";
+    }
+
+    // Validar Precio
+    if (Number(data.price) <= 0 || isNaN(Number(data.price))) {
+      errors.price = "El precio debe ser un número mayor a 0.";
+    }
+
+    // Validar Duplicados en tiempo real (mismísima regla que Java)
+    if (!errors.type && !errors.colour && !errors.manufacturer) {
+      const isDuplicate = list.some((item) => {
+        const itemId = getFilamentId(item);
+        const matches =
+          item.type?.trim().toLowerCase() === data.type.trim().toLowerCase() &&
+          item.colour?.trim().toLowerCase() === data.colour.trim().toLowerCase() &&
+          item.manufacturer?.trim().toLowerCase() === data.manufacturer.trim().toLowerCase();
+
+        return currentEditingId ? matches && itemId !== currentEditingId : matches;
+      });
+
+      if (isDuplicate) {
+        errors.duplicate = "Ya existe un filamento registrado con este Tipo, Color y Fabricante.";
+      }
+    }
+
+    return errors;
+  };
+
+  // Ejecuta validación cada vez que cambia el formulario, la lista o el modo de edición
+  useEffect(() => {
+    const errors = validate(formData, editingId, filaments);
+    setFieldErrors(errors);
+  }, [formData, editingId, filaments]);
+
   const handleInputChange = (e) => {
     const { name, value } = e.target;
     setFormData((prev) => ({
       ...prev,
       [name]: value,
     }));
+    setTouched((prev) => ({ ...prev, [name]: true }));
   };
 
   const handleResetForm = () => {
     setFormData(initialFormState);
     setEditingId(null);
     setError(null);
+    setTouched({});
   };
 
   const handleEditClick = (filament) => {
@@ -76,18 +142,30 @@ export default function FilamentsManager() {
       price: filament.price || 0,
     });
     setEditingId(id);
+    setTouched({ colour: true, type: true, manufacturer: true, price: true });
   };
+
+  const isFormInvalid = Object.keys(fieldErrors).length > 0;
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+
+    // Marcar todos los campos como interactuados al enviar
+    setTouched({ colour: true, type: true, manufacturer: true, price: true });
+
+    if (isFormInvalid) {
+      setError(fieldErrors.duplicate || "Por favor corrige los errores del formulario.");
+      return;
+    }
+
     setIsLoading(true);
     setError(null);
     setSuccessMsg(null);
 
     const payload = {
-      colour: String(formData.colour),
-      type: String(formData.type),
-      manufacturer: String(formData.manufacturer),
+      colour: String(formData.colour).trim(),
+      type: String(formData.type).trim(),
+      manufacturer: String(formData.manufacturer).trim(),
       price: Number(formData.price),
     };
 
@@ -108,9 +186,7 @@ export default function FilamentsManager() {
       const data = await safeJsonParse(response);
 
       if (!response.ok) {
-        throw new Error(
-          data?.message || `Error en la solicitud (${response.status})`
-        );
+        throw new Error(data?.message || `Error en la solicitud (${response.status})`);
       }
 
       setSuccessMsg(
@@ -155,10 +231,20 @@ export default function FilamentsManager() {
     }
   };
 
+  // Helper para clases CSS según estado del campo
+  const getInputStyle = (fieldName) => {
+    const hasError = touched[fieldName] && fieldErrors[fieldName];
+    const isValid = touched[fieldName] && !fieldErrors[fieldName];
+
+    if (hasError) return "border-red-500 focus:ring-red-500 focus:border-red-500";
+    if (isValid) return "border-emerald-500 focus:ring-emerald-500 focus:border-emerald-500";
+    return "border-gray-700 focus:ring-emerald-500 focus:border-emerald-500";
+  };
+
   return (
     <div className="min-h-screen bg-gray-900 text-white flex flex-col items-center px-4 py-8">
       {/* Header */}
-      <motion.div 
+      <motion.div
         initial={{ opacity: 0, y: -15 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.4 }}
@@ -182,7 +268,7 @@ export default function FilamentsManager() {
         </motion.div>
       </motion.div>
 
-      {/* Mensajes globales dinámicos */}
+      {/* Mensajes globales */}
       <div className="w-full max-w-6xl mb-4">
         <AnimatePresence mode="wait">
           {error && (
@@ -211,7 +297,7 @@ export default function FilamentsManager() {
       </div>
 
       <div className="w-full max-w-6xl flex flex-col lg:flex-row gap-8 items-start">
-        {/* Formulario (Menú Izquierdo) */}
+        {/* Formulario */}
         <motion.div
           layout
           initial={{ opacity: 0, x: -20 }}
@@ -247,67 +333,143 @@ export default function FilamentsManager() {
             )}
           </div>
 
-          <form onSubmit={handleSubmit} className="space-y-4">
+          <form onSubmit={handleSubmit} className="space-y-4" noValidate>
+            {/* Advertencia de Duplicado */}
+            <AnimatePresence>
+              {fieldErrors.duplicate && (
+                <motion.div
+                  initial={{ opacity: 0, height: 0 }}
+                  animate={{ opacity: 1, height: "auto" }}
+                  exit={{ opacity: 0, height: 0 }}
+                  className="bg-amber-900/30 border border-amber-500/50 text-amber-200 text-xs p-2.5 rounded-md mb-2"
+                >
+                  ⚠️ {fieldErrors.duplicate}
+                </motion.div>
+              )}
+            </AnimatePresence>
+
+            {/* Campo: Tipo */}
             <div>
               <label className="text-sm text-gray-400 block mb-1">Tipo de Material</label>
               <input
                 type="text"
                 name="type"
-                required
                 value={formData.type}
                 onChange={handleInputChange}
+                onBlur={() => setTouched((p) => ({ ...p, type: true }))}
                 placeholder="Ej: PLA, PETG, ABS, TPU"
-                className="w-full bg-gray-700 rounded-md p-2 text-white focus:outline-none focus:ring-2 focus:ring-emerald-500 text-sm"
+                className={`w-full bg-gray-700 rounded-md p-2 text-white focus:outline-none focus:ring-2 text-sm border transition-colors ${getInputStyle(
+                  "type"
+                )}`}
               />
+              <AnimatePresence>
+                {touched.type && fieldErrors.type && (
+                  <motion.p
+                    initial={{ opacity: 0, y: -4 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: -4 }}
+                    className="text-xs text-red-400 mt-1"
+                  >
+                    {fieldErrors.type}
+                  </motion.p>
+                )}
+              </AnimatePresence>
             </div>
 
+            {/* Campo: Color */}
             <div>
               <label className="text-sm text-gray-400 block mb-1">Color</label>
               <input
                 type="text"
                 name="colour"
-                required
                 value={formData.colour}
                 onChange={handleInputChange}
+                onBlur={() => setTouched((p) => ({ ...p, colour: true }))}
                 placeholder="Ej: Negro, Rojo, Azul Translucido"
-                className="w-full bg-gray-700 rounded-md p-2 text-white focus:outline-none focus:ring-2 focus:ring-emerald-500 text-sm"
+                className={`w-full bg-gray-700 rounded-md p-2 text-white focus:outline-none focus:ring-2 text-sm border transition-colors ${getInputStyle(
+                  "colour"
+                )}`}
               />
+              <AnimatePresence>
+                {touched.colour && fieldErrors.colour && (
+                  <motion.p
+                    initial={{ opacity: 0, y: -4 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: -4 }}
+                    className="text-xs text-red-400 mt-1"
+                  >
+                    {fieldErrors.colour}
+                  </motion.p>
+                )}
+              </AnimatePresence>
             </div>
 
+            {/* Campo: Fabricante */}
             <div>
               <label className="text-sm text-gray-400 block mb-1">Fabricante / Marca</label>
               <input
                 type="text"
                 name="manufacturer"
-                required
                 value={formData.manufacturer}
                 onChange={handleInputChange}
+                onBlur={() => setTouched((p) => ({ ...p, manufacturer: true }))}
                 placeholder="Ej: Esun, GST3D, Bambu Lab"
-                className="w-full bg-gray-700 rounded-md p-2 text-white focus:outline-none focus:ring-2 focus:ring-emerald-500 text-sm"
+                className={`w-full bg-gray-700 rounded-md p-2 text-white focus:outline-none focus:ring-2 text-sm border transition-colors ${getInputStyle(
+                  "manufacturer"
+                )}`}
               />
+              <AnimatePresence>
+                {touched.manufacturer && fieldErrors.manufacturer && (
+                  <motion.p
+                    initial={{ opacity: 0, y: -4 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: -4 }}
+                    className="text-xs text-red-400 mt-1"
+                  >
+                    {fieldErrors.manufacturer}
+                  </motion.p>
+                )}
+              </AnimatePresence>
             </div>
 
+            {/* Campo: Precio */}
             <div>
               <label className="text-sm text-gray-400 block mb-1">Precio ($)</label>
               <input
                 type="number"
                 name="price"
                 min="0"
-                required
                 step="any"
                 value={formData.price}
                 onChange={handleInputChange}
-                className="w-full bg-gray-700 rounded-md p-2 text-white focus:outline-none focus:ring-2 focus:ring-emerald-500 text-sm"
+                onBlur={() => setTouched((p) => ({ ...p, price: true }))}
+                className={`w-full bg-gray-700 rounded-md p-2 text-white focus:outline-none focus:ring-2 text-sm border transition-colors ${getInputStyle(
+                  "price"
+                )}`}
               />
+              <AnimatePresence>
+                {touched.price && fieldErrors.price && (
+                  <motion.p
+                    initial={{ opacity: 0, y: -4 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: -4 }}
+                    className="text-xs text-red-400 mt-1"
+                  >
+                    {fieldErrors.price}
+                  </motion.p>
+                )}
+              </AnimatePresence>
             </div>
 
             <motion.button
-              whileHover={{ scale: 1.02 }}
-              whileTap={{ scale: 0.98 }}
+              whileHover={{ scale: isFormInvalid ? 1 : 1.02 }}
+              whileTap={{ scale: isFormInvalid ? 1 : 0.98 }}
               type="submit"
-              disabled={isLoading}
-              className={`w-full font-bold py-2.5 rounded-md text-sm mt-4 disabled:opacity-50 transition-colors ${
-                editingId
+              disabled={isLoading || isFormInvalid}
+              className={`w-full font-bold py-2.5 rounded-md text-sm mt-4 transition-colors ${
+                isFormInvalid
+                  ? "bg-gray-700 text-gray-500 cursor-not-allowed"
+                  : editingId
                   ? "bg-amber-600 hover:bg-amber-500 text-white"
                   : "bg-emerald-600 hover:bg-emerald-500 text-white"
               }`}
@@ -322,7 +484,7 @@ export default function FilamentsManager() {
         </motion.div>
 
         {/* Tabla de Filamentos */}
-        <motion.div 
+        <motion.div
           initial={{ opacity: 0, x: 20 }}
           animate={{ opacity: 1, x: 0 }}
           transition={{ duration: 0.4 }}
@@ -370,7 +532,7 @@ export default function FilamentsManager() {
                         <td className="py-3 px-3 font-semibold text-white">
                           {filament.type}
                           {isBeingEdited && (
-                            <motion.span 
+                            <motion.span
                               initial={{ scale: 0 }}
                               animate={{ scale: 1 }}
                               className="ml-2 text-xs text-emerald-300 bg-emerald-900/60 px-2 py-0.5 rounded border border-emerald-700 font-normal inline-block"
