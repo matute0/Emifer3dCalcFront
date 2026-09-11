@@ -1,16 +1,33 @@
-# React + Vite
+# Emifer 3D - Frontend
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+Interfaz web de **Emifer 3D**, una plataforma diseñada para el cálculo de costos, gestión de presupuestos y administración de servicios de impresión 3D.
 
-Currently, two official plugins are available:
+---
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+## 🚀 Descripción del Proyecto
 
-## React Compiler
+El frontend de Emifer 3D proporciona una interfaz interactiva donde los clientes y administradores pueden:
+* **Calcular Costos de Impresión:** Estimación en tiempo real del costo de modelos 3D según peso de filamento, tiempo de máquina y consumo energético.
+* **Autenticación y Perfiles:** Sistema de inicio de sesión para usuarios y panel de control administrativo.
+* **Gestión de Presupuestos:** Visualización detallada de cotizaciones y parámetros de fabricación.
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+---
 
-## Expanding the ESLint configuration
+## ✨ Características Principales
 
-If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and [`typescript-eslint`](https://typescript-eslint.io) in your project.
+* **Calculadora Interactiva:** Interfaz optimizada con animaciones fluidas para el ingreso de parámetros de impresión 3D.
+* **Diseño Responsivo & Moderno:** Construido con Utility-First CSS para adaptarse a dispositivos móviles y de escritorio.
+* **Autenticación JWT:** Integración segura mediante tokens de acceso consumidos desde la API REST en Spring Boot.
+* **Arquitectura Containerizada:** Servido a través de un contenedor Nginx optimizado y ligero.
+
+---
+
+## 🛠️ Tecnologías
+
+* **Core UI & Lógica:** React
+* **Build Tool:** Vite
+* **Estilos:** Tailwind CSS
+* **Animaciones:** Framer Motion
+* **Entorno de Ejecución:** Node.js v20+
+* **Despliegue & Servidor:** Docker + Nginx (`alpine`)
+
