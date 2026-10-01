@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Link } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 
@@ -8,6 +8,9 @@ const REGEX_MANUFACTURER = /^[a-zA-ZáéíóúÁÉÍÓÚñÑüÜ0-9\s.\-&]+$/;
 
 export default function PrintersManager() {
   const API_URL = import.meta.env.VITE_API_URL;
+
+  // Ref para hacer scroll automático al formulario en móviles
+  const formRef = useRef(null);
 
   const initialFormState = {
     name: "",
@@ -150,6 +153,11 @@ export default function PrintersManager() {
           watts: true,
           wearCost: true,
         });
+
+        // Scroll automático al formulario si es pantalla móvil/tablet (< 1024px)
+        if (window.innerWidth < 1024 && formRef.current) {
+          formRef.current.scrollIntoView({ behavior: "smooth", block: "start" });
+        }
       } else {
         setError("No se pudieron obtener los detalles de la impresora.");
       }
@@ -164,7 +172,6 @@ export default function PrintersManager() {
   const handleSubmit = async (e) => {
     e.preventDefault();
 
-    // Marcar todos los campos como interactuados al enviar
     setTouched({
       name: true,
       manufacturer: true,
@@ -251,7 +258,6 @@ export default function PrintersManager() {
     }
   };
 
-  // Helper para clases CSS según estado del campo
   const getInputStyle = (fieldName) => {
     const hasError = touched[fieldName] && fieldErrors[fieldName];
     const isValid = touched[fieldName] && !fieldErrors[fieldName];
@@ -262,33 +268,33 @@ export default function PrintersManager() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-900 text-white flex flex-col items-center px-4 py-8">
-      {/* Header */}
+    <div className="min-h-screen bg-gray-900 text-white flex flex-col items-center px-4 py-6 sm:py-8">
+      {/* Header adaptable */}
       <motion.div
         initial={{ opacity: 0, y: -15 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.4 }}
-        className="w-full max-w-6xl flex justify-between items-center mb-8"
+        className="w-full max-w-6xl flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6 sm:mb-8"
       >
         <div>
-          <h1 className="text-3xl font-extrabold bg-gradient-to-r from-blue-400 via-sky-200 to-indigo-300 bg-clip-text text-transparent">
+          <h1 className="text-2xl sm:text-3xl font-extrabold bg-gradient-to-r from-blue-400 via-sky-200 to-indigo-300 bg-clip-text text-transparent">
             Gestión de Impresoras
           </h1>
-          <p className="text-gray-400 text-sm mt-1">
+          <p className="text-gray-400 text-xs sm:text-sm mt-1">
             Agrega o modifica equipos de tu catálogo
           </p>
         </div>
-        <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
+        <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }} className="w-full sm:w-auto">
           <Link
             to="/admin"
-            className="bg-gray-800 hover:bg-gray-700 text-gray-300 text-sm font-medium py-2 px-4 rounded-md border border-gray-700 transition-colors inline-block"
+            className="w-full sm:w-auto text-center bg-gray-800 hover:bg-gray-700 text-gray-300 text-xs sm:text-sm font-medium py-2 px-4 rounded-md border border-gray-700 transition-colors inline-block"
           >
             ← Volver al Menú Admin
           </Link>
         </motion.div>
       </motion.div>
 
-      {/* Mensajes globales dinámicos */}
+      {/* Mensajes globales */}
       <div className="w-full max-w-6xl mb-4">
         <AnimatePresence mode="wait">
           {error && (
@@ -317,13 +323,14 @@ export default function PrintersManager() {
       </div>
 
       <div className="w-full max-w-6xl flex flex-col lg:flex-row gap-8 items-start">
-        {/* Formulario (Menú Izquierdo) */}
+        {/* Formulario (Con Ref asignado para Scroll en Celulares) */}
         <motion.div
+          ref={formRef}
           layout
           initial={{ opacity: 0, x: -20 }}
           animate={{ opacity: 1, x: 0 }}
           transition={{ duration: 0.4 }}
-          className={`p-6 rounded-xl shadow-lg w-full lg:w-1/3 transition-all duration-300 ${
+          className={`p-5 sm:p-6 rounded-xl shadow-lg w-full lg:w-1/3 transition-all duration-300 ${
             editingId
               ? "bg-gray-800 border-2 border-blue-500 ring-4 ring-blue-500/20 shadow-blue-500/10"
               : "bg-gray-800 border border-gray-700"
@@ -331,7 +338,7 @@ export default function PrintersManager() {
         >
           <div className="flex justify-between items-center mb-6 border-b border-gray-700 pb-3">
             <div className="flex items-center gap-2">
-              <h2 className="text-xl font-bold text-white">
+              <h2 className="text-lg sm:text-xl font-bold text-white">
                 {editingId ? "Editar Impresora" : "Nueva Impresora"}
               </h2>
               {editingId && (
@@ -354,7 +361,6 @@ export default function PrintersManager() {
           </div>
 
           <form onSubmit={handleSubmit} className="space-y-4" noValidate>
-            {/* Advertencia de Duplicado */}
             <AnimatePresence>
               {fieldErrors.duplicate && (
                 <motion.div
@@ -368,9 +374,8 @@ export default function PrintersManager() {
               )}
             </AnimatePresence>
 
-            {/* Campo: Nombre */}
             <div>
-              <label className="text-sm text-gray-400 block mb-1">Nombre</label>
+              <label className="text-xs sm:text-sm text-gray-400 block mb-1">Nombre</label>
               <input
                 type="text"
                 name="name"
@@ -378,7 +383,7 @@ export default function PrintersManager() {
                 onChange={handleInputChange}
                 onBlur={() => setTouched((p) => ({ ...p, name: true }))}
                 placeholder="Ej: Ender 3 V2, Bambu P1P"
-                className={`w-full bg-gray-700 rounded-md p-2 text-white focus:outline-none focus:ring-2 text-sm border transition-colors ${getInputStyle(
+                className={`w-full bg-gray-700 rounded-md p-2.5 sm:p-2 text-white focus:outline-none focus:ring-2 text-sm border transition-colors ${getInputStyle(
                   "name"
                 )}`}
               />
@@ -396,9 +401,8 @@ export default function PrintersManager() {
               </AnimatePresence>
             </div>
 
-            {/* Campo: Fabricante */}
             <div>
-              <label className="text-sm text-gray-400 block mb-1">Fabricante</label>
+              <label className="text-xs sm:text-sm text-gray-400 block mb-1">Fabricante</label>
               <input
                 type="text"
                 name="manufacturer"
@@ -406,7 +410,7 @@ export default function PrintersManager() {
                 onChange={handleInputChange}
                 onBlur={() => setTouched((p) => ({ ...p, manufacturer: true }))}
                 placeholder="Ej: Creality, Bambu Lab"
-                className={`w-full bg-gray-700 rounded-md p-2 text-white focus:outline-none focus:ring-2 text-sm border transition-colors ${getInputStyle(
+                className={`w-full bg-gray-700 rounded-md p-2.5 sm:p-2 text-white focus:outline-none focus:ring-2 text-sm border transition-colors ${getInputStyle(
                   "manufacturer"
                 )}`}
               />
@@ -424,10 +428,9 @@ export default function PrintersManager() {
               </AnimatePresence>
             </div>
 
-            {/* Campos Numéricos: Watts y Costo Desgaste */}
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <label className="text-sm text-gray-400 block mb-1">Consumo (Watts)</label>
+                <label className="text-xs sm:text-sm text-gray-400 block mb-1">Consumo (Watts)</label>
                 <input
                   type="number"
                   name="watts"
@@ -436,7 +439,7 @@ export default function PrintersManager() {
                   value={formData.watts}
                   onChange={handleInputChange}
                   onBlur={() => setTouched((p) => ({ ...p, watts: true }))}
-                  className={`w-full bg-gray-700 rounded-md p-2 text-white focus:outline-none focus:ring-2 text-sm border transition-colors ${getInputStyle(
+                  className={`w-full bg-gray-700 rounded-md p-2.5 sm:p-2 text-white focus:outline-none focus:ring-2 text-sm border transition-colors ${getInputStyle(
                     "watts"
                   )}`}
                 />
@@ -455,7 +458,7 @@ export default function PrintersManager() {
               </div>
 
               <div>
-                <label className="text-sm text-gray-400 block mb-1">Costo Desgaste</label>
+                <label className="text-xs sm:text-sm text-gray-400 block mb-1">Costo Desgaste</label>
                 <input
                   type="number"
                   name="wearCost"
@@ -464,7 +467,7 @@ export default function PrintersManager() {
                   value={formData.wearCost}
                   onChange={handleInputChange}
                   onBlur={() => setTouched((p) => ({ ...p, wearCost: true }))}
-                  className={`w-full bg-gray-700 rounded-md p-2 text-white focus:outline-none focus:ring-2 text-sm border transition-colors ${getInputStyle(
+                  className={`w-full bg-gray-700 rounded-md p-2.5 sm:p-2 text-white focus:outline-none focus:ring-2 text-sm border transition-colors ${getInputStyle(
                     "wearCost"
                   )}`}
                 />
@@ -483,7 +486,6 @@ export default function PrintersManager() {
               </div>
             </div>
 
-            {/* Checkbox: Multi-Color */}
             <div className="flex items-center gap-2 pt-2">
               <input
                 type="checkbox"
@@ -495,7 +497,7 @@ export default function PrintersManager() {
               />
               <label
                 htmlFor="multiColour"
-                className="text-sm text-gray-300 cursor-pointer select-none"
+                className="text-xs sm:text-sm text-gray-300 cursor-pointer select-none"
               >
                 Soporta Multi-Color (AMS / MMU)
               </label>
@@ -506,7 +508,7 @@ export default function PrintersManager() {
               whileTap={{ scale: isFormInvalid ? 1 : 0.98 }}
               type="submit"
               disabled={isLoading || isFormInvalid}
-              className={`w-full font-bold py-2.5 rounded-md text-sm mt-4 transition-colors ${
+              className={`w-full font-bold py-3 sm:py-2.5 rounded-md text-sm mt-4 transition-colors ${
                 isFormInvalid
                   ? "bg-gray-700 text-gray-500 cursor-not-allowed"
                   : editingId
@@ -523,14 +525,14 @@ export default function PrintersManager() {
           </form>
         </motion.div>
 
-        {/* Tabla de Impresoras */}
+        {/* Listado de Impresoras */}
         <motion.div
           initial={{ opacity: 0, x: 20 }}
           animate={{ opacity: 1, x: 0 }}
           transition={{ duration: 0.4 }}
-          className="bg-gray-800 border border-gray-700 p-6 rounded-xl shadow-lg w-full lg:w-2/3 overflow-x-auto"
+          className="bg-gray-800 border border-gray-700 p-5 sm:p-6 rounded-xl shadow-lg w-full lg:w-2/3"
         >
-          <h2 className="text-xl font-bold text-white mb-4">
+          <h2 className="text-lg sm:text-xl font-bold text-white mb-4">
             Listado de Impresoras
           </h2>
 
@@ -539,88 +541,171 @@ export default function PrintersManager() {
               No hay impresoras registradas actualmente.
             </p>
           ) : (
-            <table className="w-full text-left text-sm text-gray-300">
-              <thead className="bg-gray-750 text-gray-400 uppercase text-xs border-b border-gray-700">
-                <tr>
-                  <th className="py-3 px-3">Nombre</th>
-                  <th className="py-3 px-3">Marca</th>
-                  <th className="py-3 px-3">Watts</th>
-                  <th className="py-3 px-3">Multi-color</th>
-                  <th className="py-3 px-3 text-right">Acciones</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-gray-700">
+            <>
+              {/* VISTA EN TARJETAS (Sólo Móviles / Pantallas Pequeñas < lg) */}
+              <div className="grid grid-cols-1 gap-3 lg:hidden">
                 <AnimatePresence>
                   {printers.map((printer) => {
                     const id = getPrinterId(printer);
                     const isBeingEdited = editingId === id;
 
                     return (
-                      <motion.tr
-                        key={id}
+                      <motion.div
+                        key={`card-${id}`}
                         layout
                         initial={{ opacity: 0, y: 10 }}
                         animate={{ opacity: 1, y: 0 }}
-                        exit={{ opacity: 0, height: 0 }}
-                        transition={{ duration: 0.25 }}
-                        className={`transition-colors ${
+                        exit={{ opacity: 0, scale: 0.95 }}
+                        className={`p-4 rounded-lg border transition-all ${
                           isBeingEdited
-                            ? "bg-blue-950/60 border-l-4 border-l-blue-500"
-                            : "hover:bg-gray-750/50"
+                            ? "bg-blue-950/40 border-blue-500 ring-2 ring-blue-500/20"
+                            : "bg-gray-750/60 border-gray-700"
                         }`}
                       >
-                        <td className="py-3 px-3 font-semibold text-white">
-                          {printer.name}
-                          {isBeingEdited && (
-                            <motion.span
-                              initial={{ scale: 0 }}
-                              animate={{ scale: 1 }}
-                              className="ml-2 text-xs text-blue-300 bg-blue-900/60 px-2 py-0.5 rounded border border-blue-700 font-normal inline-block"
-                            >
-                              Editando
-                            </motion.span>
-                          )}
-                        </td>
-                        <td className="py-3 px-3">{printer.manufacturer}</td>
-                        <td className="py-3 px-3">{printer.watts}W</td>
-                        <td className="py-3 px-3">
-                          {printer.multiColour ? (
-                            <span className="text-green-400 text-xs font-medium">Sí</span>
-                          ) : (
-                            <span className="text-gray-500 text-xs">No</span>
-                          )}
-                        </td>
-                        <td className="py-3 px-3 text-right">
-                          <div className="flex justify-end gap-2">
-                            <motion.button
-                              whileHover={{ scale: 1.05 }}
-                              whileTap={{ scale: 0.95 }}
-                              onClick={() => handleEditClick(id)}
-                              className={`px-2.5 py-1 rounded text-xs transition-colors ${
-                                isBeingEdited
-                                  ? "bg-blue-500 text-white font-semibold"
-                                  : "bg-blue-600/80 hover:bg-blue-500 text-white"
-                              }`}
-                            >
-                              {isBeingEdited ? "En edición" : "Editar"}
-                            </motion.button>
-
-                            <motion.button
-                              whileHover={{ scale: 1.05 }}
-                              whileTap={{ scale: 0.95 }}
-                              onClick={() => handleDelete(id)}
-                              className="bg-red-600/80 hover:bg-red-500 text-white px-2.5 py-1 rounded text-xs transition-colors"
-                            >
-                              Eliminar
-                            </motion.button>
+                        <div className="flex justify-between items-start mb-2">
+                          <div>
+                            <h3 className="font-semibold text-white text-base flex items-center gap-2">
+                              {printer.name}
+                              {isBeingEdited && (
+                                <span className="text-[10px] text-blue-300 bg-blue-900/80 px-2 py-0.5 rounded border border-blue-700">
+                                  Editando
+                                </span>
+                              )}
+                            </h3>
+                            <p className="text-xs text-gray-400">{printer.manufacturer}</p>
                           </div>
-                        </td>
-                      </motion.tr>
+                          <span
+                            className={`text-xs px-2 py-0.5 rounded font-medium ${
+                              printer.multiColour
+                                ? "bg-green-900/50 text-green-400 border border-green-700/50"
+                                : "bg-gray-700 text-gray-400"
+                            }`}
+                          >
+                            {printer.multiColour ? "Multi-color" : "Monocolor"}
+                          </span>
+                        </div>
+
+                        <div className="grid grid-cols-2 gap-2 my-3 text-xs bg-gray-900/50 p-2.5 rounded-md border border-gray-800">
+                          <div>
+                            <span className="text-gray-400 block">Consumo:</span>
+                            <span className="font-medium text-gray-200">{printer.watts} Watts</span>
+                          </div>
+                          <div>
+                            <span className="text-gray-400 block">Costo desgaste:</span>
+                            <span className="font-medium text-gray-200">${printer.wearCost || 0}</span>
+                          </div>
+                        </div>
+
+                        <div className="flex justify-end gap-2 pt-1">
+                          <button
+                            onClick={() => handleEditClick(id)}
+                            className={`flex-1 py-2 rounded text-xs font-medium transition-colors ${
+                              isBeingEdited
+                                ? "bg-blue-500 text-white"
+                                : "bg-blue-600/80 hover:bg-blue-500 text-white"
+                            }`}
+                          >
+                            {isBeingEdited ? "En edición" : "Editar"}
+                          </button>
+                          <button
+                            onClick={() => handleDelete(id)}
+                            className="px-4 py-2 bg-red-600/80 hover:bg-red-500 text-white rounded text-xs font-medium transition-colors"
+                          >
+                            Eliminar
+                          </button>
+                        </div>
+                      </motion.div>
                     );
                   })}
                 </AnimatePresence>
-              </tbody>
-            </table>
+              </div>
+
+              {/* VISTA EN TABLA (Escritorio >= lg) */}
+              <div className="hidden lg:block overflow-x-auto">
+                <table className="w-full text-left text-sm text-gray-300">
+                  <thead className="bg-gray-750 text-gray-400 uppercase text-xs border-b border-gray-700">
+                    <tr>
+                      <th className="py-3 px-3">Nombre</th>
+                      <th className="py-3 px-3">Marca</th>
+                      <th className="py-3 px-3">Watts</th>
+                      <th className="py-3 px-3">Multi-color</th>
+                      <th className="py-3 px-3 text-right">Acciones</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-gray-700">
+                    <AnimatePresence>
+                      {printers.map((printer) => {
+                        const id = getPrinterId(printer);
+                        const isBeingEdited = editingId === id;
+
+                        return (
+                          <motion.tr
+                            key={`table-${id}`}
+                            layout
+                            initial={{ opacity: 0, y: 10 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            exit={{ opacity: 0, height: 0 }}
+                            transition={{ duration: 0.25 }}
+                            className={`transition-colors ${
+                              isBeingEdited
+                                ? "bg-blue-950/60 border-l-4 border-l-blue-500"
+                                : "hover:bg-gray-750/50"
+                            }`}
+                          >
+                            <td className="py-3 px-3 font-semibold text-white">
+                              {printer.name}
+                              {isBeingEdited && (
+                                <motion.span
+                                  initial={{ scale: 0 }}
+                                  animate={{ scale: 1 }}
+                                  className="ml-2 text-xs text-blue-300 bg-blue-900/60 px-2 py-0.5 rounded border border-blue-700 font-normal inline-block"
+                                >
+                                  Editando
+                                </motion.span>
+                              )}
+                            </td>
+                            <td className="py-3 px-3">{printer.manufacturer}</td>
+                            <td className="py-3 px-3">{printer.watts}W</td>
+                            <td className="py-3 px-3">
+                              {printer.multiColour ? (
+                                <span className="text-green-400 text-xs font-medium">Sí</span>
+                              ) : (
+                                <span className="text-gray-500 text-xs">No</span>
+                              )}
+                            </td>
+                            <td className="py-3 px-3 text-right">
+                              <div className="flex justify-end gap-2">
+                                <motion.button
+                                  whileHover={{ scale: 1.05 }}
+                                  whileTap={{ scale: 0.95 }}
+                                  onClick={() => handleEditClick(id)}
+                                  className={`px-2.5 py-1 rounded text-xs transition-colors ${
+                                    isBeingEdited
+                                      ? "bg-blue-500 text-white font-semibold"
+                                      : "bg-blue-600/80 hover:bg-blue-500 text-white"
+                                  }`}
+                                >
+                                  {isBeingEdited ? "En edición" : "Editar"}
+                                </motion.button>
+
+                                <motion.button
+                                  whileHover={{ scale: 1.05 }}
+                                  whileTap={{ scale: 0.95 }}
+                                  onClick={() => handleDelete(id)}
+                                  className="bg-red-600/80 hover:bg-red-500 text-white px-2.5 py-1 rounded text-xs transition-colors"
+                                >
+                                  Eliminar
+                                </motion.button>
+                              </div>
+                            </td>
+                          </motion.tr>
+                        );
+                      })}
+                    </AnimatePresence>
+                  </tbody>
+                </table>
+              </div>
+            </>
           )}
         </motion.div>
       </div>
