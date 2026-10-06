@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import LoginButton from "../components/LoginButton";
 
@@ -10,7 +10,7 @@ export default function InitialPage() {
 
   const [printers, setPrinters] = useState([]);
   const [availableFilaments, setAvailableFilaments] = useState([]);
-
+  const resultRef = useRef(null);
   const [selectedPrinterId, setSelectedPrinterId] = useState("");
   const [currentPrinter, setCurrentPrinter] = useState(null);
 
@@ -26,6 +26,16 @@ export default function InitialPage() {
   const [result, setResult] = useState(null);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState(null);
+useEffect(() => {
+    const isMobile = window.innerWidth < 1024;
+
+    if (result && resultRef.current && isMobile) {
+      resultRef.current.scrollIntoView({ 
+        behavior: "smooth", 
+        block: "start" 
+      });
+    }
+  }, [result]);
 
   // Estados de seguimiento de interacción y errores en tiempo real
   const [touched, setTouched] = useState({
@@ -365,7 +375,7 @@ export default function InitialPage() {
           initial={{ opacity: 0, x: -30 }}
           animate={{ opacity: 1, x: 0 }}
           transition={{ duration: 0.5, delay: 0.1 }}
-          className="bg-gradient-to-b from-gray-800 via-gray-800 to-gray-850 p-8 rounded-xl shadow-2xl w-full lg:w-1/2 border border-gray-700 overflow-hidden relative"
+          className="bg-gradient-to-b from-gray-800 via-gray-800 to-gray-850 p-6 md:p-8 rounded-xl shadow-2xl w-full lg:w-1/2 border border-gray-700 relative"
         >
           <div className="absolute -top-16 -right-16 w-32 h-32 bg-gray-700/20 rounded-full blur-2xl pointer-events-none" />
 
@@ -491,9 +501,9 @@ export default function InitialPage() {
                       animate={{ opacity: 1, height: "auto", y: 0 }}
                       exit={{ opacity: 0, height: 0, y: -10 }}
                       transition={{ duration: 0.25 }}
-                      className="flex gap-2 items-start bg-gray-750 p-3 rounded-md border border-gray-700 overflow-hidden"
+                      className="flex flex-col sm:flex-row gap-3 items-stretch sm:items-start bg-gray-750 p-3 rounded-md border border-gray-700"
                     >
-                      <div className="flex flex-col flex-grow">
+                      <div className="flex flex-col flex-grow w-full min-w-0">
                         <label className="text-xs text-gray-400 mb-1">
                           Material
                         </label>
@@ -509,7 +519,7 @@ export default function InitialPage() {
                               return { ...prev, filaments: updated };
                             })
                           }
-                          className={`bg-gray-700 rounded-md p-2 text-white focus:outline-none focus:ring-2 text-sm border transition-colors ${getInputClass(
+                          className={`bg-gray-700 rounded-md p-2 text-white focus:outline-none focus:ring-2 text-sm border transition-colors w-full truncate ${getInputClass(
                             itemTouched.filamentID,
                             itemErrors.filamentID
                           )}`}
@@ -543,48 +553,50 @@ export default function InitialPage() {
                         )}
                       </div>
 
-                      <div className="flex flex-col w-24">
-                        <label className="text-xs text-gray-400 mb-1">
-                          Cant. (g)
-                        </label>
-                        <input
-                          type="number"
-                          min="0"
-                          step="any"
-                          value={item.amount}
-                          onChange={(e) =>
-                            handleFilamentChange(index, "amount", e.target.value)
-                          }
-                          onBlur={() =>
-                            setTouched((prev) => {
-                              const updated = [...prev.filaments];
-                              updated[index] = { ...updated[index], amount: true };
-                              return { ...prev, filaments: updated };
-                            })
-                          }
-                          className={`bg-gray-700 rounded-md p-2 text-white focus:outline-none focus:ring-2 text-sm border transition-colors ${getInputClass(
-                            itemTouched.amount,
-                            itemErrors.amount
-                          )}`}
-                        />
-                        {itemTouched.amount && itemErrors.amount && (
-                          <span className="text-xs text-red-400 mt-1">
-                            {itemErrors.amount}
-                          </span>
+                      <div className="flex gap-2 items-end w-full sm:w-auto">
+                        <div className="flex flex-col flex-grow sm:w-28">
+                          <label className="text-xs text-gray-400 mb-1">
+                            Cant. (g)
+                          </label>
+                          <input
+                            type="number"
+                            min="0"
+                            step="any"
+                            value={item.amount}
+                            onChange={(e) =>
+                              handleFilamentChange(index, "amount", e.target.value)
+                            }
+                            onBlur={() =>
+                              setTouched((prev) => {
+                                const updated = [...prev.filaments];
+                                updated[index] = { ...updated[index], amount: true };
+                                return { ...prev, filaments: updated };
+                              })
+                            }
+                            className={`bg-gray-700 rounded-md p-2 text-white focus:outline-none focus:ring-2 text-sm border transition-colors w-full ${getInputClass(
+                              itemTouched.amount,
+                              itemErrors.amount
+                            )}`}
+                          />
+                          {itemTouched.amount && itemErrors.amount && (
+                            <span className="text-xs text-red-400 mt-1">
+                              {itemErrors.amount}
+                            </span>
+                          )}
+                        </div>
+
+                        {selectedFilaments.length > 1 && (
+                          <motion.button
+                            whileHover={{ scale: 1.05 }}
+                            whileTap={{ scale: 0.95 }}
+                            type="button"
+                            onClick={() => removeFilamentRow(index)}
+                            className="bg-red-600/80 hover:bg-red-500 text-white h-[38px] px-3 rounded-md transition-colors flex items-center justify-center shrink-0"
+                          >
+                            ✕
+                          </motion.button>
                         )}
                       </div>
-
-                      {selectedFilaments.length > 1 && (
-                        <motion.button
-                          whileHover={{ scale: 1.05 }}
-                          whileTap={{ scale: 0.95 }}
-                          type="button"
-                          onClick={() => removeFilamentRow(index)}
-                          className="bg-red-600/80 hover:bg-red-500 text-white p-2 rounded-md transition-colors mt-6"
-                        >
-                          ✕
-                        </motion.button>
-                      )}
                     </motion.div>
                   );
                 })}
@@ -623,9 +635,9 @@ export default function InitialPage() {
                       animate={{ opacity: 1, height: "auto", y: 0 }}
                       exit={{ opacity: 0, height: 0, y: -10 }}
                       transition={{ duration: 0.25 }}
-                      className="flex gap-2 items-start bg-gray-750 p-3 rounded-md border border-gray-700 overflow-hidden"
+                      className="flex flex-col sm:flex-row gap-3 items-stretch sm:items-start bg-gray-750 p-3 rounded-md border border-gray-700"
                     >
-                      <div className="flex flex-col flex-grow">
+                      <div className="flex flex-col flex-grow w-full min-w-0">
                         <label className="text-xs text-gray-400 mb-1">
                           Concepto
                         </label>
@@ -643,7 +655,7 @@ export default function InitialPage() {
                               return { ...prev, additionalCosts: updated };
                             })
                           }
-                          className={`bg-gray-700 rounded-md p-2 text-white focus:outline-none focus:ring-2 text-sm border transition-colors ${getInputClass(
+                          className={`bg-gray-700 rounded-md p-2 text-white focus:outline-none focus:ring-2 text-sm border transition-colors w-full ${getInputClass(
                             itemTouched.name,
                             itemErrors.name
                           )}`}
@@ -655,91 +667,93 @@ export default function InitialPage() {
                         )}
                       </div>
 
-                      <div className="flex flex-col w-20">
-                        <label className="text-xs text-gray-400 mb-1">
-                          Cant.
-                        </label>
-                        <input
-                          type="number"
-                          min="1"
-                          step="any"
-                          value={item.quantity}
-                          onChange={(e) =>
-                            handleAdditionalCostChange(
-                              index,
-                              "quantity",
-                              e.target.value
-                            )
-                          }
-                          onBlur={() =>
-                            setTouched((prev) => {
-                              const updated = [...prev.additionalCosts];
-                              updated[index] = {
-                                ...updated[index],
-                                quantity: true
-                              };
-                              return { ...prev, additionalCosts: updated };
-                            })
-                          }
-                          className={`bg-gray-700 rounded-md p-2 text-white focus:outline-none focus:ring-2 text-sm border transition-colors ${getInputClass(
-                            itemTouched.quantity,
-                            itemErrors.quantity
-                          )}`}
-                        />
-                        {itemTouched.quantity && itemErrors.quantity && (
-                          <span className="text-xs text-red-400 mt-1">
-                            {itemErrors.quantity}
-                          </span>
-                        )}
-                      </div>
+                      <div className="flex gap-2 items-end w-full sm:w-auto">
+                        <div className="flex flex-col flex-1 sm:w-20">
+                          <label className="text-xs text-gray-400 mb-1">
+                            Cant.
+                          </label>
+                          <input
+                            type="number"
+                            min="1"
+                            step="any"
+                            value={item.quantity}
+                            onChange={(e) =>
+                              handleAdditionalCostChange(
+                                index,
+                                "quantity",
+                                e.target.value
+                              )
+                            }
+                            onBlur={() =>
+                              setTouched((prev) => {
+                                const updated = [...prev.additionalCosts];
+                                updated[index] = {
+                                  ...updated[index],
+                                  quantity: true
+                                };
+                                return { ...prev, additionalCosts: updated };
+                              })
+                            }
+                            className={`bg-gray-700 rounded-md p-2 text-white focus:outline-none focus:ring-2 text-sm border transition-colors w-full ${getInputClass(
+                              itemTouched.quantity,
+                              itemErrors.quantity
+                            )}`}
+                          />
+                          {itemTouched.quantity && itemErrors.quantity && (
+                            <span className="text-xs text-red-400 mt-1">
+                              {itemErrors.quantity}
+                            </span>
+                          )}
+                        </div>
 
-                      <div className="flex flex-col w-24">
-                        <label className="text-xs text-gray-400 mb-1">
-                          Precio Un.
-                        </label>
-                        <input
-                          type="number"
-                          min="0"
-                          step="any"
-                          value={item.unitPrice}
-                          onChange={(e) =>
-                            handleAdditionalCostChange(
-                              index,
-                              "unitPrice",
-                              e.target.value
-                            )
-                          }
-                          onBlur={() =>
-                            setTouched((prev) => {
-                              const updated = [...prev.additionalCosts];
-                              updated[index] = {
-                                ...updated[index],
-                                unitPrice: true
-                              };
-                              return { ...prev, additionalCosts: updated };
-                            })
-                          }
-                          className={`bg-gray-700 rounded-md p-2 text-white focus:outline-none focus:ring-2 text-sm border transition-colors ${getInputClass(
-                            itemTouched.unitPrice,
-                            itemErrors.unitPrice
-                          )}`}
-                        />
-                        {itemTouched.unitPrice && itemErrors.unitPrice && (
-                          <span className="text-xs text-red-400 mt-1">
-                            {itemErrors.unitPrice}
-                          </span>
-                        )}
-                      </div>
+                        <div className="flex flex-col flex-1 sm:w-24">
+                          <label className="text-xs text-gray-400 mb-1">
+                            Precio Un.
+                          </label>
+                          <input
+                            type="number"
+                            min="0"
+                            step="any"
+                            value={item.unitPrice}
+                            onChange={(e) =>
+                              handleAdditionalCostChange(
+                                index,
+                                "unitPrice",
+                                e.target.value
+                              )
+                            }
+                            onBlur={() =>
+                              setTouched((prev) => {
+                                const updated = [...prev.additionalCosts];
+                                updated[index] = {
+                                  ...updated[index],
+                                  unitPrice: true
+                                };
+                                return { ...prev, additionalCosts: updated };
+                              })
+                            }
+                            className={`bg-gray-700 rounded-md p-2 text-white focus:outline-none focus:ring-2 text-sm border transition-colors w-full ${getInputClass(
+                              itemTouched.unitPrice,
+                              itemErrors.unitPrice
+                            )}`}
+                          />
+                          {itemTouched.unitPrice && itemErrors.unitPrice && (
+                            <span className="text-xs text-red-400 mt-1">
+                              {itemErrors.unitPrice}
+                            </span>
+                          )}
+                        </div>
 
-                      <motion.button
-                        whileHover={{ scale: 1.05 }}
-                        whileTap={{ scale: 0.95 }}
-                        type="button"
-                        onClick={() => removeAdditionalCostRow(index)}
-                        className="bg-red-600/80 hover:bg-red-500 text-white p-2 rounded-md transition-colors mt-6"
-                      >
-                        ✕
-                      </motion.button>
+                        <motion.button
+                          whileHover={{ scale: 1.05 }}
+                          whileTap={{ scale: 0.95 }}
+                          type="button"
+                          onClick={() => removeAdditionalCostRow(index)}
+                          className="bg-red-600/80 hover:bg-red-500 text-white h-[38px] px-3 rounded-md transition-colors flex items-center justify-center shrink-0"
+                        >
+                          ✕
+                        </motion.button>
+                      </div>
                     </motion.div>
                   );
                 })}
@@ -790,6 +804,7 @@ export default function InitialPage() {
         <AnimatePresence>
           {result && (
             <motion.div
+              ref={resultRef}
               initial={{ opacity: 0, scale: 0.88, y: 30, x: 10 }}
               animate={{
                 opacity: 1,

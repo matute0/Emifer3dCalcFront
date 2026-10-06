@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Link } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 
@@ -9,6 +9,9 @@ const REGEX_MANUFACTURER = /^[a-zA-ZáéíóúÁÉÍÓÚñÑüÜ0-9\s.\-&]+$/;
 
 export default function FilamentsManager() {
   const API_URL = import.meta.env.VITE_API_URL;
+
+  // Ref para hacer scroll automático al formulario en móviles
+  const formRef = useRef(null);
 
   const initialFormState = {
     colour: "",
@@ -88,7 +91,7 @@ export default function FilamentsManager() {
       errors.price = "El precio debe ser un número mayor a 0.";
     }
 
-    // Validar Duplicados en tiempo real (mismísima regla que Java)
+    // Validar Duplicados en tiempo real
     if (!errors.type && !errors.colour && !errors.manufacturer) {
       const isDuplicate = list.some((item) => {
         const itemId = getFilamentId(item);
@@ -143,6 +146,11 @@ export default function FilamentsManager() {
     });
     setEditingId(id);
     setTouched({ colour: true, type: true, manufacturer: true, price: true });
+
+    // Scroll automático hacia el formulario en pantallas móviles (< 1024px)
+    if (window.innerWidth < 1024 && formRef.current) {
+      formRef.current.scrollIntoView({ behavior: "smooth", block: "start" });
+    }
   };
 
   const isFormInvalid = Object.keys(fieldErrors).length > 0;
@@ -150,7 +158,6 @@ export default function FilamentsManager() {
   const handleSubmit = async (e) => {
     e.preventDefault();
 
-    // Marcar todos los campos como interactuados al enviar
     setTouched({ colour: true, type: true, manufacturer: true, price: true });
 
     if (isFormInvalid) {
@@ -231,7 +238,6 @@ export default function FilamentsManager() {
     }
   };
 
-  // Helper para clases CSS según estado del campo
   const getInputStyle = (fieldName) => {
     const hasError = touched[fieldName] && fieldErrors[fieldName];
     const isValid = touched[fieldName] && !fieldErrors[fieldName];
@@ -242,26 +248,26 @@ export default function FilamentsManager() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-900 text-white flex flex-col items-center px-4 py-8">
-      {/* Header */}
+    <div className="min-h-screen bg-gray-900 text-white flex flex-col items-center px-4 py-6 sm:py-8">
+      {/* Header Adaptable */}
       <motion.div
         initial={{ opacity: 0, y: -15 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.4 }}
-        className="w-full max-w-6xl flex justify-between items-center mb-8"
+        className="w-full max-w-6xl flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6 sm:mb-8"
       >
         <div>
-          <h1 className="text-3xl font-extrabold bg-gradient-to-r from-emerald-400 via-teal-200 to-cyan-300 bg-clip-text text-transparent">
+          <h1 className="text-2xl sm:text-3xl font-extrabold bg-gradient-to-r from-emerald-400 via-teal-200 to-cyan-300 bg-clip-text text-transparent">
             Gestión de Filamentos
           </h1>
-          <p className="text-gray-400 text-sm mt-1">
+          <p className="text-gray-400 text-xs sm:text-sm mt-1">
             Agrega o modifica los materiales de tu catálogo
           </p>
         </div>
-        <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
+        <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }} className="w-full sm:w-auto">
           <Link
             to="/admin"
-            className="bg-gray-800 hover:bg-gray-700 text-gray-300 text-sm font-medium py-2 px-4 rounded-md border border-gray-700 transition-colors inline-block"
+            className="w-full sm:w-auto text-center bg-gray-800 hover:bg-gray-700 text-gray-300 text-xs sm:text-sm font-medium py-2 px-4 rounded-md border border-gray-700 transition-colors inline-block"
           >
             ← Volver al Menú Admin
           </Link>
@@ -297,13 +303,14 @@ export default function FilamentsManager() {
       </div>
 
       <div className="w-full max-w-6xl flex flex-col lg:flex-row gap-8 items-start">
-        {/* Formulario */}
+        {/* Formulario (Con Ref para Auto-scroll) */}
         <motion.div
+          ref={formRef}
           layout
           initial={{ opacity: 0, x: -20 }}
           animate={{ opacity: 1, x: 0 }}
           transition={{ duration: 0.4 }}
-          className={`p-6 rounded-xl shadow-lg w-full lg:w-1/3 transition-all duration-300 ${
+          className={`p-5 sm:p-6 rounded-xl shadow-lg w-full lg:w-1/3 transition-all duration-300 ${
             editingId
               ? "bg-gray-800 border-2 border-emerald-500 ring-4 ring-emerald-500/20 shadow-emerald-500/10"
               : "bg-gray-800 border border-gray-700"
@@ -311,7 +318,7 @@ export default function FilamentsManager() {
         >
           <div className="flex justify-between items-center mb-6 border-b border-gray-700 pb-3">
             <div className="flex items-center gap-2">
-              <h2 className="text-xl font-bold text-white">
+              <h2 className="text-lg sm:text-xl font-bold text-white">
                 {editingId ? "Editar Filamento" : "Nuevo Filamento"}
               </h2>
               {editingId && (
@@ -334,7 +341,6 @@ export default function FilamentsManager() {
           </div>
 
           <form onSubmit={handleSubmit} className="space-y-4" noValidate>
-            {/* Advertencia de Duplicado */}
             <AnimatePresence>
               {fieldErrors.duplicate && (
                 <motion.div
@@ -348,9 +354,8 @@ export default function FilamentsManager() {
               )}
             </AnimatePresence>
 
-            {/* Campo: Tipo */}
             <div>
-              <label className="text-sm text-gray-400 block mb-1">Tipo de Material</label>
+              <label className="text-xs sm:text-sm text-gray-400 block mb-1">Tipo de Material</label>
               <input
                 type="text"
                 name="type"
@@ -358,7 +363,7 @@ export default function FilamentsManager() {
                 onChange={handleInputChange}
                 onBlur={() => setTouched((p) => ({ ...p, type: true }))}
                 placeholder="Ej: PLA, PETG, ABS, TPU"
-                className={`w-full bg-gray-700 rounded-md p-2 text-white focus:outline-none focus:ring-2 text-sm border transition-colors ${getInputStyle(
+                className={`w-full bg-gray-700 rounded-md p-2.5 sm:p-2 text-white focus:outline-none focus:ring-2 text-sm border transition-colors ${getInputStyle(
                   "type"
                 )}`}
               />
@@ -376,9 +381,8 @@ export default function FilamentsManager() {
               </AnimatePresence>
             </div>
 
-            {/* Campo: Color */}
             <div>
-              <label className="text-sm text-gray-400 block mb-1">Color</label>
+              <label className="text-xs sm:text-sm text-gray-400 block mb-1">Color</label>
               <input
                 type="text"
                 name="colour"
@@ -386,7 +390,7 @@ export default function FilamentsManager() {
                 onChange={handleInputChange}
                 onBlur={() => setTouched((p) => ({ ...p, colour: true }))}
                 placeholder="Ej: Negro, Rojo, Azul Translucido"
-                className={`w-full bg-gray-700 rounded-md p-2 text-white focus:outline-none focus:ring-2 text-sm border transition-colors ${getInputStyle(
+                className={`w-full bg-gray-700 rounded-md p-2.5 sm:p-2 text-white focus:outline-none focus:ring-2 text-sm border transition-colors ${getInputStyle(
                   "colour"
                 )}`}
               />
@@ -404,9 +408,8 @@ export default function FilamentsManager() {
               </AnimatePresence>
             </div>
 
-            {/* Campo: Fabricante */}
             <div>
-              <label className="text-sm text-gray-400 block mb-1">Fabricante / Marca</label>
+              <label className="text-xs sm:text-sm text-gray-400 block mb-1">Fabricante / Marca</label>
               <input
                 type="text"
                 name="manufacturer"
@@ -414,7 +417,7 @@ export default function FilamentsManager() {
                 onChange={handleInputChange}
                 onBlur={() => setTouched((p) => ({ ...p, manufacturer: true }))}
                 placeholder="Ej: Esun, GST3D, Bambu Lab"
-                className={`w-full bg-gray-700 rounded-md p-2 text-white focus:outline-none focus:ring-2 text-sm border transition-colors ${getInputStyle(
+                className={`w-full bg-gray-700 rounded-md p-2.5 sm:p-2 text-white focus:outline-none focus:ring-2 text-sm border transition-colors ${getInputStyle(
                   "manufacturer"
                 )}`}
               />
@@ -432,9 +435,8 @@ export default function FilamentsManager() {
               </AnimatePresence>
             </div>
 
-            {/* Campo: Precio */}
             <div>
-              <label className="text-sm text-gray-400 block mb-1">Precio ($)</label>
+              <label className="text-xs sm:text-sm text-gray-400 block mb-1">Precio ($)</label>
               <input
                 type="number"
                 name="price"
@@ -443,7 +445,7 @@ export default function FilamentsManager() {
                 value={formData.price}
                 onChange={handleInputChange}
                 onBlur={() => setTouched((p) => ({ ...p, price: true }))}
-                className={`w-full bg-gray-700 rounded-md p-2 text-white focus:outline-none focus:ring-2 text-sm border transition-colors ${getInputStyle(
+                className={`w-full bg-gray-700 rounded-md p-2.5 sm:p-2 text-white focus:outline-none focus:ring-2 text-sm border transition-colors ${getInputStyle(
                   "price"
                 )}`}
               />
@@ -466,7 +468,7 @@ export default function FilamentsManager() {
               whileTap={{ scale: isFormInvalid ? 1 : 0.98 }}
               type="submit"
               disabled={isLoading || isFormInvalid}
-              className={`w-full font-bold py-2.5 rounded-md text-sm mt-4 transition-colors ${
+              className={`w-full font-bold py-3 sm:py-2.5 rounded-md text-sm mt-4 transition-colors ${
                 isFormInvalid
                   ? "bg-gray-700 text-gray-500 cursor-not-allowed"
                   : editingId
@@ -483,14 +485,14 @@ export default function FilamentsManager() {
           </form>
         </motion.div>
 
-        {/* Tabla de Filamentos */}
+        {/* Listado de Filamentos */}
         <motion.div
           initial={{ opacity: 0, x: 20 }}
           animate={{ opacity: 1, x: 0 }}
           transition={{ duration: 0.4 }}
-          className="bg-gray-800 border border-gray-700 p-6 rounded-xl shadow-lg w-full lg:w-2/3 overflow-x-auto"
+          className="bg-gray-800 border border-gray-700 p-5 sm:p-6 rounded-xl shadow-lg w-full lg:w-2/3"
         >
-          <h2 className="text-xl font-bold text-white mb-4">
+          <h2 className="text-lg sm:text-xl font-bold text-white mb-4">
             Listado de Filamentos
           </h2>
 
@@ -499,82 +501,153 @@ export default function FilamentsManager() {
               No hay filamentos registrados actualmente.
             </p>
           ) : (
-            <table className="w-full text-left text-sm text-gray-300">
-              <thead className="bg-gray-750 text-gray-400 uppercase text-xs border-b border-gray-700">
-                <tr>
-                  <th className="py-3 px-3">Tipo</th>
-                  <th className="py-3 px-3">Color</th>
-                  <th className="py-3 px-3">Marca</th>
-                  <th className="py-3 px-3">Precio</th>
-                  <th className="py-3 px-3 text-right">Acciones</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-gray-700">
+            <>
+              {/* VISTA EN TARJETAS (Sólo para Pantallas Pequeñas < lg) */}
+              <div className="grid grid-cols-1 gap-3 lg:hidden">
                 <AnimatePresence>
                   {filaments.map((filament) => {
                     const id = getFilamentId(filament);
                     const isBeingEdited = editingId === id;
 
                     return (
-                      <motion.tr
-                        key={id}
+                      <motion.div
+                        key={`card-${id}`}
                         layout
                         initial={{ opacity: 0, y: 10 }}
                         animate={{ opacity: 1, y: 0 }}
-                        exit={{ opacity: 0, height: 0 }}
-                        transition={{ duration: 0.25 }}
-                        className={`transition-colors ${
+                        exit={{ opacity: 0, scale: 0.95 }}
+                        className={`p-4 rounded-lg border transition-all ${
                           isBeingEdited
-                            ? "bg-emerald-950/60 border-l-4 border-l-emerald-500"
-                            : "hover:bg-gray-750/50"
+                            ? "bg-emerald-950/40 border-emerald-500 ring-2 ring-emerald-500/20"
+                            : "bg-gray-750/60 border-gray-700"
                         }`}
                       >
-                        <td className="py-3 px-3 font-semibold text-white">
-                          {filament.type}
-                          {isBeingEdited && (
-                            <motion.span
-                              initial={{ scale: 0 }}
-                              animate={{ scale: 1 }}
-                              className="ml-2 text-xs text-emerald-300 bg-emerald-900/60 px-2 py-0.5 rounded border border-emerald-700 font-normal inline-block"
-                            >
-                              Editando
-                            </motion.span>
-                          )}
-                        </td>
-                        <td className="py-3 px-3">{filament.colour}</td>
-                        <td className="py-3 px-3">{filament.manufacturer}</td>
-                        <td className="py-3 px-3">${filament.price}</td>
-                        <td className="py-3 px-3 text-right">
-                          <div className="flex justify-end gap-2">
-                            <motion.button
-                              whileHover={{ scale: 1.05 }}
-                              whileTap={{ scale: 0.95 }}
-                              onClick={() => handleEditClick(filament)}
-                              className={`px-2.5 py-1 rounded text-xs transition-colors ${
-                                isBeingEdited
-                                  ? "bg-emerald-500 text-white font-semibold"
-                                  : "bg-emerald-600/80 hover:bg-emerald-500 text-white"
-                              }`}
-                            >
-                              {isBeingEdited ? "En edición" : "Editar"}
-                            </motion.button>
-
-                            <motion.button
-                              whileHover={{ scale: 1.05 }}
-                              whileTap={{ scale: 0.95 }}
-                              onClick={() => handleDelete(id)}
-                              className="bg-red-600/80 hover:bg-red-500 text-white px-2.5 py-1 rounded text-xs transition-colors"
-                            >
-                              Eliminar
-                            </motion.button>
+                        <div className="flex justify-between items-start mb-2">
+                          <div>
+                            <h3 className="font-semibold text-white text-base flex items-center gap-2">
+                              {filament.type}
+                              {isBeingEdited && (
+                                <span className="text-[10px] text-emerald-300 bg-emerald-900/80 px-2 py-0.5 rounded border border-emerald-700">
+                                  Editando
+                                </span>
+                              )}
+                            </h3>
+                            <p className="text-xs text-gray-400">{filament.manufacturer}</p>
                           </div>
-                        </td>
-                      </motion.tr>
+                          <span className="text-xs px-2.5 py-1 rounded-md font-bold bg-emerald-900/40 text-emerald-300 border border-emerald-700/50">
+                            ${filament.price}
+                          </span>
+                        </div>
+
+                        <div className="my-2 text-xs bg-gray-900/50 p-2.5 rounded-md border border-gray-800 flex justify-between items-center">
+                          <span className="text-gray-400">Color:</span>
+                          <span className="font-medium text-gray-200">{filament.colour}</span>
+                        </div>
+
+                        <div className="flex justify-end gap-2 pt-2">
+                          <button
+                            onClick={() => handleEditClick(filament)}
+                            className={`flex-1 py-2 rounded text-xs font-medium transition-colors ${
+                              isBeingEdited
+                                ? "bg-emerald-500 text-white"
+                                : "bg-emerald-600/80 hover:bg-emerald-500 text-white"
+                            }`}
+                          >
+                            {isBeingEdited ? "En edición" : "Editar"}
+                          </button>
+                          <button
+                            onClick={() => handleDelete(id)}
+                            className="px-4 py-2 bg-red-600/80 hover:bg-red-500 text-white rounded text-xs font-medium transition-colors"
+                          >
+                            Eliminar
+                          </button>
+                        </div>
+                      </motion.div>
                     );
                   })}
                 </AnimatePresence>
-              </tbody>
-            </table>
+              </div>
+
+              {/* VISTA EN TABLA (Sólo para Escritorio >= lg) */}
+              <div className="hidden lg:block overflow-x-auto">
+                <table className="w-full text-left text-sm text-gray-300">
+                  <thead className="bg-gray-750 text-gray-400 uppercase text-xs border-b border-gray-700">
+                    <tr>
+                      <th className="py-3 px-3">Tipo</th>
+                      <th className="py-3 px-3">Color</th>
+                      <th className="py-3 px-3">Marca</th>
+                      <th className="py-3 px-3">Precio</th>
+                      <th className="py-3 px-3 text-right">Acciones</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-gray-700">
+                    <AnimatePresence>
+                      {filaments.map((filament) => {
+                        const id = getFilamentId(filament);
+                        const isBeingEdited = editingId === id;
+
+                        return (
+                          <motion.tr
+                            key={`table-${id}`}
+                            layout
+                            initial={{ opacity: 0, y: 10 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            exit={{ opacity: 0, height: 0 }}
+                            transition={{ duration: 0.25 }}
+                            className={`transition-colors ${
+                              isBeingEdited
+                                ? "bg-emerald-950/60 border-l-4 border-l-emerald-500"
+                                : "hover:bg-gray-750/50"
+                            }`}
+                          >
+                            <td className="py-3 px-3 font-semibold text-white">
+                              {filament.type}
+                              {isBeingEdited && (
+                                <motion.span
+                                  initial={{ scale: 0 }}
+                                  animate={{ scale: 1 }}
+                                  className="ml-2 text-xs text-emerald-300 bg-emerald-900/60 px-2 py-0.5 rounded border border-emerald-700 font-normal inline-block"
+                                >
+                                  Editando
+                                </motion.span>
+                              )}
+                            </td>
+                            <td className="py-3 px-3">{filament.colour}</td>
+                            <td className="py-3 px-3">{filament.manufacturer}</td>
+                            <td className="py-3 px-3">${filament.price}</td>
+                            <td className="py-3 px-3 text-right">
+                              <div className="flex justify-end gap-2">
+                                <motion.button
+                                  whileHover={{ scale: 1.05 }}
+                                  whileTap={{ scale: 0.95 }}
+                                  onClick={() => handleEditClick(filament)}
+                                  className={`px-2.5 py-1 rounded text-xs transition-colors ${
+                                    isBeingEdited
+                                      ? "bg-emerald-500 text-white font-semibold"
+                                      : "bg-emerald-600/80 hover:bg-emerald-500 text-white"
+                                  }`}
+                                >
+                                  {isBeingEdited ? "En edición" : "Editar"}
+                                </motion.button>
+
+                                <motion.button
+                                  whileHover={{ scale: 1.05 }}
+                                  whileTap={{ scale: 0.95 }}
+                                  onClick={() => handleDelete(id)}
+                                  className="bg-red-600/80 hover:bg-red-500 text-white px-2.5 py-1 rounded text-xs transition-colors"
+                                >
+                                  Eliminar
+                                </motion.button>
+                              </div>
+                            </td>
+                          </motion.tr>
+                        );
+                      })}
+                    </AnimatePresence>
+                  </tbody>
+                </table>
+              </div>
+            </>
           )}
         </motion.div>
       </div>
